@@ -7,19 +7,18 @@ Fast, reliable wireless internet for Guyana. Built with Next.js, Supabase, and T
 ```bash
 npm install
 cp .env.example .env.local
-# Add your Supabase credentials to .env.local
 npm run dev
 ```
 
-## Tech Stack
+## Deploy to Vercel
 
-- **Frontend**: Next.js 15, React, TypeScript, Tailwind CSS
-- - **Backend**: Supabase (PostgreSQL + PostGIS + Auth + Realtime)
-  - - **Deployment**: Vercel
-   
-    - ## Pages
-   
-    - - `/` - Homepage (hero, about, services, plans, contact)
-      - - `/plans` - Internet packages with GYD pricing
-        - - `/coverage` - Coverage zones across Guyana
-          - - `/contact` - Contact form + WhatsApp integration
+```bash
+git init && git add -A && git commit -m "Initial commit"
+git branch -M main
+git remote add origin https://github.com/ericjewan-spec/evolve-wireless.git
+git push -u origin main --force
+```
+
+Then import on vercel.com and add these env vars:
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
