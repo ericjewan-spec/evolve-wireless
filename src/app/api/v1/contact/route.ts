@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
+import { sendContactConfirmation, sendContactNotification } from "@/lib/email";
+import { slackContactForm } from "@/lib/slack";
 
 export async function POST(req: NextRequest) {
   try {
@@ -12,7 +14,7 @@ export async function POST(req: NextRequest) {
 
     const supabase = await createClient();
 
-    // Store as a lead in the existing leads table (if it exists) or support_tickets
+    // Store in database
     const { error } = await supabase.from("leads").insert({
       first_name: name.split(" ")[0],
       last_name: name.split(" ").slice(1).join(" ") || "",
@@ -25,9 +27,15 @@ export async function POST(req: NextRequest) {
     });
 
     if (error) {
-      // If leads table doesn't exist, that's ok — log it
       console.error("Lead insert error:", error.message);
     }
+
+    // Send email confirmation to customer + notification to team (fire-and-forget)
+    Promise.all([
+      sendContactConfirmation(email, name),
+      sendContactNotification({ name, email, phone, subject, message }),
+      slackContactForm({ name, email, phone, subject, message }),
+    ]).catch((e) => console.error("Notification error:", e));
 
     return NextResponse.json({ success: true, message: "We'll get back to you within 1 business day." });
   } catch {

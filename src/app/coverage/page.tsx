@@ -55,6 +55,12 @@ export default function CoveragePage() {
   async function joinWaitlist(e: React.FormEvent) {
     e.preventDefault();
     await supabase.from("waitlist").insert({ email: waitlistEmail, address });
+    // Slack notification (non-blocking)
+    fetch("/api/v1/coverage/waitlist-notify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: waitlistEmail, address }),
+    }).catch(() => {});
     setWaitlistDone(true);
   }
 

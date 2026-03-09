@@ -74,21 +74,19 @@ export default function SignupPage() {
 
       if (subErr) throw subErr;
 
-      // 3. Notify team via Slack + email (non-blocking)
-      try {
-        await fetch("/api/leads", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            first_name: form.fullName.split(" ")[0],
-            last_name: form.fullName.split(" ").slice(1).join(" ") || form.fullName,
-            phone: form.phone,
-            email: form.email,
-            plan_interest: form.planName,
-            source: "signup_flow",
-          }),
-        });
-      } catch { /* non-blocking */ }
+      // 3. Send welcome email + Slack notification (non-blocking)
+      fetch("/api/v1/signup/notify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: form.fullName,
+          email: form.email,
+          phone: form.phone,
+          plan: form.planName,
+          region: form.region === "ecd" ? "East Coast Demerara" : "Region 1",
+          address: `${form.address}, ${form.village}`,
+        }),
+      }).catch(() => {});
 
       setSuccess(true);
     } catch (e) {

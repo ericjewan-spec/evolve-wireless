@@ -77,6 +77,22 @@ export default function SupportPage() {
       setSuccess(`Ticket ${ticketNum} created! We'll respond within 1 hour.`);
       setShowForm(false);
       setFormDesc("");
+
+      // Send email + Slack notification (non-blocking)
+      fetch("/api/v1/support/notify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: user.email,
+          customerName: user.user_metadata?.full_name || user.email,
+          customerPhone: user.user_metadata?.phone,
+          ticketNumber: ticketNum,
+          type: formType,
+          priority: "medium",
+          description: formDesc,
+        }),
+      }).catch(() => {});
+
       await loadTickets();
     }
     setSubmitting(false);
