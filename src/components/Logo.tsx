@@ -9,19 +9,18 @@ export function Logo({ className = "" }: { className?: string }) {
     >
       <defs>
         <linearGradient id="logoGrad" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#0057FF" />
-          <stop offset="100%" stopColor="#00D4FF" />
+          <stop offset="0%" stopColor="#D4654A" />
+          <stop offset="100%" stopColor="#F0906E" />
         </linearGradient>
       </defs>
-      <rect x="2" y="2" width="44" height="44" rx="11" fill="url(#logoGrad)" />
-      <path d="M12 28a12 12 0 0 1 24 0" stroke="white" strokeWidth="2.8" strokeLinecap="round" fill="none" opacity="0.5" />
-      <path d="M17 28a7 7 0 0 1 14 0" stroke="white" strokeWidth="2.8" strokeLinecap="round" fill="none" opacity="0.75" />
-      <circle cx="24" cy="28" r="3" fill="white" />
-      <line x1="24" y1="18" x2="24" y2="10" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
-      <polyline points="20,14 24,10 28,14" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-      <text x="56" y="20" fontFamily="var(--font-display), sans-serif" fontWeight="800" fontSize="15" fill="white" letterSpacing="-0.3">EVOLVE</text>
-      <text x="56" y="34" fontFamily="var(--font-display), sans-serif" fontWeight="600" fontSize="10.5" fill="#00D4FF" letterSpacing="2.5">WIRELESS</text>
-      <text x="56" y="44" fontFamily="var(--font-body), sans-serif" fontWeight="300" fontSize="7.5" fill="#4A6583" letterSpacing="0.8">INTERNET · GUYANA</text>
+      <circle cx="24" cy="24" r="22" fill="url(#logoGrad)" />
+      <circle cx="24" cy="28" r="3.5" fill="white" />
+      <path d="M15 22 Q24 14 33 22" stroke="white" strokeWidth="2.5" strokeLinecap="round" fill="none" />
+      <path d="M11 18 Q24 8 37 18" stroke="white" strokeWidth="2" strokeLinecap="round" fill="none" opacity="0.7" />
+      <path d="M18.5 25.5 Q24 20.5 29.5 25.5" stroke="white" strokeWidth="2.2" strokeLinecap="round" fill="none" opacity="0.85" />
+      <text x="56" y="21" fontFamily="'Bricolage Grotesque', serif" fontWeight="800" fontSize="15" fill="#2C1810" letterSpacing="-0.3">EVOLVE</text>
+      <text x="56" y="34" fontFamily="'Bricolage Grotesque', serif" fontWeight="600" fontSize="10.5" fill="#D4654A" letterSpacing="2.5">WIRELESS</text>
+      <text x="56" y="44" fontFamily="'Nunito', sans-serif" fontWeight="400" fontSize="7.5" fill="#8B7355" letterSpacing="0.8">INTERNET · GUYANA</text>
     </svg>
   );
 }

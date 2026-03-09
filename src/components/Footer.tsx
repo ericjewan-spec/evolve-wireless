@@ -30,15 +30,14 @@ const SUPPORT = [
 
 export default function Footer() {
   return (
-    <footer className="bg-card2 border-t border-divider pt-16 pb-8">
-      <div className="container-ew">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 pb-12 border-b border-divider">
-          {/* Brand */}
+    <footer style={{ background: "#2C1810", color: "#FDF8F3" }} className="pt-16 pb-8">
+      <div className="container">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 pb-12" style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
           <div>
             <Link href="/">
               <Logo className="h-[42px] w-auto" />
             </Link>
-            <p className="text-[0.88rem] text-text2 leading-[1.75] mt-4 max-w-[280px]">
+            <p className="text-[0.88rem] leading-[1.75] mt-4 max-w-[280px]" style={{ color: "rgba(253, 248, 243, 0.6)" }}>
               Connecting Guyana&apos;s homes and businesses with fast, reliable
               wireless internet. East Coast Demerara, Region 1, Port Kaituma,
               and growing.
@@ -57,15 +56,14 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* Quick Links */}
           <div>
-            <h5 className="text-[0.8rem] font-bold uppercase tracking-[0.12em] text-text2 mb-5">
+            <h5 className="text-[0.8rem] font-bold uppercase tracking-[0.12em] mb-5" style={{ color: "#FDF8F3" }}>
               Quick Links
             </h5>
             <ul className="flex flex-col gap-3 list-none">
               {QUICK_LINKS.map((l) => (
                 <li key={l.href}>
-                  <Link href={l.href} className="text-[0.88rem] text-text3 hover:text-text transition-colors">
+                  <Link href={l.href} className="text-[0.88rem] transition-colors" style={{ color: "rgba(253, 248, 243, 0.55)" }}>
                     {l.label}
                   </Link>
                 </li>
@@ -73,15 +71,14 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Services */}
           <div>
-            <h5 className="text-[0.8rem] font-bold uppercase tracking-[0.12em] text-text2 mb-5">
+            <h5 className="text-[0.8rem] font-bold uppercase tracking-[0.12em] mb-5" style={{ color: "#FDF8F3" }}>
               Services
             </h5>
             <ul className="flex flex-col gap-3 list-none">
               {SERVICES.map((s) => (
                 <li key={s}>
-                  <Link href="/#services" className="text-[0.88rem] text-text3 hover:text-text transition-colors">
+                  <Link href="/#services" className="text-[0.88rem] transition-colors" style={{ color: "rgba(253, 248, 243, 0.55)" }}>
                     {s}
                   </Link>
                 </li>
@@ -89,15 +86,14 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Support */}
           <div>
-            <h5 className="text-[0.8rem] font-bold uppercase tracking-[0.12em] text-text2 mb-5">
+            <h5 className="text-[0.8rem] font-bold uppercase tracking-[0.12em] mb-5" style={{ color: "#FDF8F3" }}>
               Support
             </h5>
             <ul className="flex flex-col gap-3 list-none">
               {SUPPORT.map((s) => (
                 <li key={s.label}>
-                  <Link href={s.href} className="text-[0.88rem] text-text3 hover:text-text transition-colors">
+                  <Link href={s.href} className="text-[0.88rem] transition-colors" style={{ color: "rgba(253, 248, 243, 0.55)" }}>
                     {s.label}
                   </Link>
                 </li>
@@ -106,17 +102,15 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Bottom bar */}
         <div className="flex items-center justify-between pt-6 flex-wrap gap-3">
-          <p className="text-[0.82rem] text-text3">
-            &copy; {new Date().getFullYear()} Evolve Wireless Internet. All
-            rights reserved.
+          <p className="text-[0.82rem]" style={{ color: "rgba(253, 248, 243, 0.4)" }}>
+            &copy; {new Date().getFullYear()} Evolve Wireless Internet. All rights reserved. | Guyana 🇬🇾
           </p>
           <div className="flex gap-5">
-            <Link href="#" className="text-text3 hover:text-cyan text-[0.82rem] transition-colors">
+            <Link href="#" className="text-[0.82rem] transition-colors" style={{ color: "rgba(253, 248, 243, 0.4)" }}>
               Privacy Policy
             </Link>
-            <Link href="#" className="text-text3 hover:text-cyan text-[0.82rem] transition-colors">
+            <Link href="#" className="text-[0.82rem] transition-colors" style={{ color: "rgba(253, 248, 243, 0.4)" }}>
               Terms of Service
             </Link>
           </div>
@@ -133,9 +127,10 @@ function SocialBtn({ href, label, children }: { href: string; label: string; chi
       target="_blank"
       rel="noopener noreferrer"
       aria-label={label}
-      className="w-9 h-9 rounded-[9px] bg-card border border-divider flex items-center justify-center hover:border-cyan hover:bg-cyan/8 transition-all"
+      className="w-9 h-9 rounded-full flex items-center justify-center transition-all"
+      style={{ background: "rgba(255,255,255,0.08)", color: "rgba(253, 248, 243, 0.7)" }}
     >
-      <svg viewBox="0 0 24 24" className="w-4 h-4 text-text2 hover:text-cyan" fill="currentColor">
+      <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor">
         {children}
       </svg>
     </a>

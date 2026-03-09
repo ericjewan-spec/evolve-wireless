@@ -1,17 +1,29 @@
 @import "tailwindcss";
 
 :root {
-  --blue: #0057FF;
-  --navy: #020B1A;
-  --cyan: #00D4FF;
-  --slate: #0F1F35;
-  --card: #0A1628;
-  --card2: #071120;
-  --green: #00E676;
-  --divider: rgba(0, 212, 255, 0.12);
-  --text: #FFFFFF;
-  --text2: #8BA8C4;
-  --text3: #4A6583;
+  --cream: #FDF8F3;
+  --warm-bg: #F9F1E8;
+  --soft-bg: #FFF9F4;
+  --navy: #FDF8F3;
+  --slate: #FFF9F4;
+  --card: #FFFFFF;
+  --card2: #FEF5EC;
+  --divider: rgba(212, 101, 74, 0.12);
+  --blue: #D4654A;
+  --cyan: #2A9D8F;
+  --green: #4CAF50;
+  --terracotta: #D4654A;
+  --terracotta-dark: #B8503A;
+  --terracotta-light: #F0906E;
+  --teal: #2A9D8F;
+  --teal-dark: #1F7A6F;
+  --teal-light: #52C7B8;
+  --gold: #E9B44C;
+  --gold-soft: #F5D590;
+  --text: #2C1810;
+  --text2: #4A3728;
+  --text3: #8B7355;
+  --text-muted: #B8A08A;
   --space-xs: 4px;
   --space-sm: 8px;
   --space-md: clamp(12px, 1vw, 16px);
@@ -36,18 +48,19 @@
 html { scroll-behavior: smooth; }
 
 body {
-  font-family: 'DM Sans', system-ui, sans-serif;
-  background: var(--navy);
-  color: var(--text);
-  line-height: 1.6;
+  font-family: 'Nunito', system-ui, sans-serif;
+  background: var(--cream);
+  color: var(--text2);
+  line-height: 1.7;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
 }
 
 h1, h2, h3, h4, h5 {
-  font-family: 'Syne', system-ui, sans-serif;
-  line-height: 1.15;
+  font-family: 'Bricolage Grotesque', system-ui, serif;
+  line-height: 1.2;
   letter-spacing: -0.02em;
+  color: var(--text);
 }
 
 a { color: inherit; text-decoration: none; }
@@ -63,25 +76,19 @@ img { display: block; max-width: 100%; }
 .section { padding: 96px 0; }
 
 .section-label {
-  font-family: 'Syne', sans-serif;
+  font-family: 'Bricolage Grotesque', sans-serif;
   font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.18em;
+  font-weight: 700;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--cyan);
-  display: flex;
+  color: var(--teal);
+  display: inline-flex;
   align-items: center;
   gap: 10px;
   margin-bottom: 16px;
-}
-
-.section-label::before {
-  content: '';
-  display: block;
-  width: 28px;
-  height: 2px;
-  background: var(--cyan);
-  border-radius: 2px;
+  padding: 0.3rem 0.8rem;
+  background: rgba(42, 157, 143, 0.1);
+  border-radius: 9999px;
 }
 
 .section-title {
@@ -91,18 +98,18 @@ img { display: block; max-width: 100%; }
   max-width: 640px;
 }
 
-.section-title span { color: var(--cyan); }
+.section-title span { color: var(--terracotta); }
 
 .section-sub {
-  color: var(--text2);
+  color: var(--text3);
   font-size: 1.05rem;
-  font-weight: 300;
+  font-weight: 400;
   max-width: 560px;
   margin-top: 16px;
-  line-height: 1.75;
+  line-height: 1.8;
 }
 
-.section-divider { height: 1px; background: var(--divider); }
+.section-divider { height: 1px; background: rgba(212, 101, 74, 0.08); }
 
 .btn {
   display: inline-flex;
@@ -110,58 +117,73 @@ img { display: block; max-width: 100%; }
   gap: 8px;
   padding: 14px 28px;
   border-radius: 9999px;
-  font-family: 'DM Sans', sans-serif;
-  font-weight: 500;
+  font-family: 'Nunito', sans-serif;
+  font-weight: 600;
   font-size: 0.9rem;
   cursor: pointer;
-  border: none;
+  border: 2px solid transparent;
   transition: var(--transition);
   white-space: nowrap;
 }
 
 .btn-primary {
-  background: var(--blue);
+  background: var(--terracotta);
   color: #fff;
-  box-shadow: 0 0 28px rgba(0, 87, 255, 0.4);
+  border-color: var(--terracotta);
+  box-shadow: 0 4px 20px rgba(212, 101, 74, 0.3);
 }
 .btn-primary:hover {
-  background: #0047d9;
-  box-shadow: 0 0 40px rgba(0, 87, 255, 0.6);
+  background: var(--terracotta-dark);
+  border-color: var(--terracotta-dark);
+  box-shadow: 0 6px 28px rgba(212, 101, 74, 0.45);
   transform: translateY(-2px);
 }
 
 .btn-outline {
   background: transparent;
-  color: var(--text);
-  border: 1.5px solid rgba(255, 255, 255, 0.2);
+  color: var(--terracotta);
+  border: 2px solid var(--terracotta);
 }
 .btn-outline:hover {
-  border-color: var(--cyan);
-  color: var(--cyan);
+  background: var(--terracotta);
+  color: #fff;
   transform: translateY(-2px);
 }
 
 .btn-cyan {
-  background: var(--cyan);
-  color: var(--navy);
+  background: var(--teal);
+  color: #fff;
+  border-color: var(--teal);
   font-weight: 700;
-  box-shadow: 0 0 28px rgba(0, 212, 255, 0.35);
+  box-shadow: 0 4px 20px rgba(42, 157, 143, 0.3);
 }
 .btn-cyan:hover {
-  box-shadow: 0 0 44px rgba(0, 212, 255, 0.55);
+  background: var(--teal-dark);
+  border-color: var(--teal-dark);
+  box-shadow: 0 6px 28px rgba(42, 157, 143, 0.45);
   transform: translateY(-2px);
+}
+
+.btn-ghost {
+  background: rgba(42, 157, 143, 0.1);
+  color: var(--teal-dark);
+  border-color: transparent;
+}
+.btn-ghost:hover {
+  background: rgba(42, 157, 143, 0.2);
 }
 
 .card {
   background: var(--card);
-  border: 1px solid var(--divider);
+  border: 1px solid rgba(44, 24, 16, 0.06);
   border-radius: var(--r-lg);
+  box-shadow: 0 2px 20px rgba(44, 24, 16, 0.06);
   transition: var(--transition);
 }
 .card:hover {
-  border-color: rgba(0, 212, 255, 0.25);
+  border-color: rgba(212, 101, 74, 0.15);
   transform: translateY(-4px);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 8px 40px rgba(44, 24, 16, 0.12);
 }
 
 .reveal {
@@ -182,17 +204,21 @@ img { display: block; max-width: 100%; }
   0%, 100% { opacity: 1; }
   50% { opacity: 0.3; }
 }
-@keyframes ringPulse {
-  0% { transform: translate(-50%, -50%) scale(0); opacity: 0.8; }
-  100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
-}
-@keyframes gridPan {
-  0% { transform: translate(0, 0); }
-  100% { transform: translate(60px, 60px); }
-}
 @keyframes waFloat {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-4px); }
+}
+@keyframes float1 {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(-40px, 30px); }
+}
+@keyframes float2 {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(30px, -25px); }
+}
+@keyframes float3 {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(-20px, -35px); }
 }
 
 .wa-float {
@@ -214,6 +240,10 @@ img { display: block; max-width: 100%; }
 .wa-float:hover {
   transform: scale(1.1);
   box-shadow: 0 8px 28px rgba(37, 211, 102, 0.5);
+}
+
+input, select, textarea {
+  font-family: 'Nunito', sans-serif;
 }
 
 @media (max-width: 768px) {
