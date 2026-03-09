@@ -1,6 +1,11 @@
 import Link from "next/link";
 
 export default function Hero() {
+  // Split title into words for stagger animation (motion spec: 55ms per word, 600ms ease-out)
+  const titleWords = ["Connecting", "Guyana,"];
+  const highlightWords = ["One", "Community"];
+  const trailWords = ["at", "a", "Time"];
+
   return (
     <section id="home" className="min-h-screen flex items-center relative overflow-hidden" style={{ paddingTop: 72, background: "var(--cream)" }}>
       {/* Warm abstract background blobs */}
@@ -32,7 +37,6 @@ export default function Hero() {
             animation: "float3 15s ease-in-out infinite",
           }}
         />
-        {/* Dot pattern */}
         <div
           className="absolute inset-0"
           style={{
@@ -43,6 +47,7 @@ export default function Hero() {
       </div>
 
       <div className="container relative z-10 text-center mx-auto" style={{ maxWidth: 800 }}>
+        {/* Badge — fadeUp at 0ms */}
         <div
           className="inline-flex items-center gap-2 mb-6"
           style={{
@@ -54,32 +59,48 @@ export default function Hero() {
             fontWeight: 600,
             color: "var(--terracotta)",
             boxShadow: "0 2px 20px rgba(44, 24, 16, 0.06)",
-            animation: "fadeUp 0.8s ease both",
+            animation: "fadeUp 0.6s cubic-bezier(0.16,1,0.3,1) both",
           }}
         >
           🇬🇾 &nbsp;Proudly Serving Guyana
         </div>
 
+        {/* Title with word-by-word stagger (motion spec: 55ms stagger, 600ms ease-out) */}
         <h1
           style={{
             fontSize: "clamp(2.4rem, 5.5vw, 4.2rem)",
             fontWeight: 800,
-            color: "var(--text)",
             marginBottom: "1.25rem",
             letterSpacing: "-0.03em",
-            animation: "fadeUp 0.8s 0.15s ease both",
+            lineHeight: 1.15,
           }}
         >
-          Connecting Guyana,<br />
-          <span style={{
-            background: "linear-gradient(135deg, var(--terracotta), var(--teal))",
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
-            backgroundClip: "text",
-          }}>One Community</span><br />
-          at a Time
+          {titleWords.map((w, i) => (
+            <span key={w} className="hero-word" style={{ marginRight: "0.2em" }}>{w} </span>
+          ))}
+          <br />
+          {highlightWords.map((w, i) => (
+            <span
+              key={w}
+              className="hero-word"
+              style={{
+                marginRight: "0.2em",
+                background: "linear-gradient(135deg, var(--terracotta), var(--teal))",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                backgroundClip: "text",
+              }}
+            >
+              {w}{" "}
+            </span>
+          ))}
+          <br />
+          {trailWords.map((w, i) => (
+            <span key={w + i} className="hero-word" style={{ marginRight: "0.2em" }}>{w} </span>
+          ))}
         </h1>
 
+        {/* Subtitle — delayed fade */}
         <p
           style={{
             fontSize: "clamp(1rem, 2vw, 1.2rem)",
@@ -87,34 +108,58 @@ export default function Hero() {
             maxWidth: 600,
             margin: "0 auto 2rem",
             lineHeight: 1.8,
-            animation: "fadeUp 0.8s 0.3s ease both",
+            animation: "fadeUp 0.7s cubic-bezier(0.16,1,0.3,1) 0.4s both",
           }}
         >
           Fast, reliable wireless internet for homes and businesses across East Coast Demerara,
           Region 1, Port Kaituma and beyond. Built on Ubiquiti, Starlink, and dedicated local expertise.
         </p>
 
-        <div className="flex gap-3 justify-center flex-wrap mb-12" style={{ animation: "fadeUp 0.8s 0.45s ease both" }}>
-          <Link href="/plans" className="btn btn-primary">View Packages</Link>
-          <Link href="/coverage" className="btn btn-ghost">Check Coverage</Link>
-          <Link href="/contact" className="btn btn-outline">Contact Us</Link>
+        {/* CTAs — spring entrance with 60ms stagger (from motion spec) */}
+        <div className="flex gap-3 justify-center flex-wrap mb-12">
+          {[
+            { href: "/plans", cls: "btn btn-primary", label: "View Packages", delay: 0.48 },
+            { href: "/coverage", cls: "btn btn-ghost", label: "Check Coverage", delay: 0.54 },
+            { href: "/contact", cls: "btn btn-outline", label: "Contact Us", delay: 0.60 },
+          ].map((cta) => (
+            <Link
+              key={cta.label}
+              href={cta.href}
+              className={cta.cls}
+              style={{
+                opacity: 0,
+                animation: `fadeUp 0.45s cubic-bezier(0.34,1.56,0.64,1) ${cta.delay}s both`,
+              }}
+            >
+              {cta.label}
+            </Link>
+          ))}
         </div>
 
-        <div className="flex gap-10 justify-center flex-wrap" style={{ animation: "fadeUp 0.8s 0.6s ease both" }}>
+        {/* Stats with animated counters (motion spec: easeOutCubic, 1200ms) */}
+        <div
+          className="flex gap-10 justify-center flex-wrap"
+          style={{ animation: "fadeUp 0.7s cubic-bezier(0.16,1,0.3,1) 0.65s both" }}
+        >
           {[
-            { num: "99%", label: "Uptime Target" },
-            { num: "24hr", label: "Fast Install" },
-            { num: "3+", label: "Regions Covered" },
+            { target: 99, suffix: "%", label: "Uptime Target", decimals: 0 },
+            { target: 24, suffix: "hr", label: "Fast Install", decimals: 0 },
+            { target: 3, suffix: "+", label: "Regions Covered", decimals: 0 },
           ].map((s) => (
             <div key={s.label} className="text-center">
-              <div style={{
-                fontFamily: "'Bricolage Grotesque', serif",
-                fontSize: "2.2rem",
-                fontWeight: 800,
-                color: "var(--terracotta)",
-                lineHeight: 1,
-              }}>
-                {s.num}
+              <div
+                className="stat-counter"
+                data-count-to={s.target}
+                data-count-suffix={s.suffix}
+                data-count-decimals={s.decimals}
+                style={{
+                  fontSize: "2.2rem",
+                  fontWeight: 800,
+                  color: "var(--terracotta)",
+                  lineHeight: 1,
+                }}
+              >
+                0{s.suffix}
               </div>
               <div style={{
                 fontSize: "0.8rem",
