@@ -74,6 +74,23 @@ export default function SignupPage() {
 
       if (subErr) throw subErr;
 
+      // 3. Sync to UISP CRM (non-blocking)
+      try {
+        await fetch("/api/v1/uisp/sync-signup", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            firstName: form.fullName.split(" ")[0],
+            lastName: form.fullName.split(" ").slice(1).join(" ") || form.fullName,
+            phone: form.phone,
+            email: form.email,
+            address: form.address,
+            region: form.region,
+            village: form.village,
+          }),
+        });
+      } catch { /* non-blocking */ }
+
       setSuccess(true);
     } catch (e) {
       setError((e as Error).message);
