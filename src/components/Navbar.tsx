@@ -68,6 +68,9 @@ export default function Navbar() {
           </ul>
 
           <div className="hidden md:flex items-center gap-3">
+            <Link href="/login" className="text-[0.9rem] font-medium px-4 py-2 rounded-full transition-all duration-200" style={{ color: "var(--text2)" }}>
+              My Account
+            </Link>
             <Link href="/contact" className="btn btn-outline" style={{ padding: "8px 20px", fontSize: "0.85rem" }}>
               Contact Us
             </Link>
