@@ -2,9 +2,9 @@ import Link from "next/link";
 
 export default function Hero() {
   // Split title into words for stagger animation (motion spec: 55ms per word, 600ms ease-out)
-  const titleWords = ["Connecting", "Guyana,"];
-  const highlightWords = ["One", "Community"];
-  const trailWords = ["at", "a", "Time"];
+  const titleWords = ["Guyana's", "Internet."];
+  const highlightWords = ["Finally", "Done"];
+  const trailWords = ["Right."];
 
   return (
     <section id="home" className="min-h-screen flex items-center relative overflow-hidden" style={{ paddingTop: 72, background: "var(--cream)" }}>
@@ -112,15 +112,15 @@ export default function Hero() {
           }}
         >
           Fast, reliable wireless internet for homes and businesses across East Coast Demerara,
-          Region 1, Port Kaituma and beyond. Built on Ubiquiti, Starlink, and dedicated local expertise.
+          Region 1, Port Kaituma, Mabaruma, Matthews Ridge and Baramita — installed in 48 hours.
         </p>
 
         {/* CTAs — spring entrance with 60ms stagger (from motion spec) */}
         <div className="flex gap-3 justify-center flex-wrap mb-12">
           {[
-            { href: "/plans", cls: "btn btn-primary", label: "View Packages", delay: 0.48 },
-            { href: "/coverage", cls: "btn btn-ghost", label: "Check Coverage", delay: 0.54 },
-            { href: "/contact", cls: "btn btn-outline", label: "Contact Us", delay: 0.60 },
+            { href: "/plans", cls: "btn btn-primary", label: "Check Your Coverage — It's Free", delay: 0.48 },
+            { href: "/plans", cls: "btn btn-ghost", label: "See Our Plans", delay: 0.54 },
+            { href: "https://wa.me/5926092487", cls: "btn btn-outline", label: "💬 WhatsApp Us", delay: 0.60 },
           ].map((cta) => (
             <Link
               key={cta.label}

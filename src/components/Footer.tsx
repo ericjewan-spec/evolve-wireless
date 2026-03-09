@@ -38,9 +38,10 @@ export default function Footer() {
               <Logo className="h-[42px] w-auto" variant="dark" />
             </Link>
             <p className="text-[0.88rem] leading-[1.75] mt-4 max-w-[280px]" style={{ color: "rgba(253, 248, 243, 0.6)" }}>
-              Connecting Guyana&apos;s homes and businesses with fast, reliable
-              wireless internet. East Coast Demerara, Region 1, Port Kaituma,
-              and growing.
+              Connecting Guyana, one community at a time. 📍 East Coast Demerara · Region 1 · 📱 +592 609-2487
+            </p>
+            <p className="text-[0.78rem] leading-[1.75] mt-3 max-w-[280px]" style={{ color: "rgba(253, 248, 243, 0.4)", fontStyle: "italic" }}>
+              Our promise: if your connection drops, we respond within the hour. Every subscription. Every customer. Every time.
             </p>
             <div className="flex gap-2.5 mt-5">
               <SocialBtn href="#" label="Facebook">
@@ -104,15 +105,12 @@ export default function Footer() {
 
         <div className="flex items-center justify-between pt-6 flex-wrap gap-3">
           <p className="text-[0.82rem]" style={{ color: "rgba(253, 248, 243, 0.4)" }}>
-            &copy; {new Date().getFullYear()} Evolve Wireless Internet. All rights reserved. | Guyana 🇬🇾
+            &copy; {new Date().getFullYear()} Evolve Wireless Internet. All rights reserved. Registered in Guyana. 🇬🇾
           </p>
-          <div className="flex gap-5">
-            <Link href="#" className="text-[0.82rem] transition-colors" style={{ color: "rgba(253, 248, 243, 0.4)" }}>
-              Privacy Policy
-            </Link>
-            <Link href="#" className="text-[0.82rem] transition-colors" style={{ color: "rgba(253, 248, 243, 0.4)" }}>
-              Terms of Service
-            </Link>
+          <div className="flex gap-4 flex-wrap">
+            <span className="text-[0.7rem] px-2 py-0.5 rounded-full" style={{ border: "1px solid rgba(255,255,255,0.15)", color: "rgba(253, 248, 243, 0.5)" }}>GUYANESE OWNED</span>
+            <span className="text-[0.7rem] px-2 py-0.5 rounded-full" style={{ border: "1px solid rgba(255,255,255,0.15)", color: "rgba(253, 248, 243, 0.5)" }}>NO CONTRACTS</span>
+            <span className="text-[0.7rem] px-2 py-0.5 rounded-full" style={{ border: "1px solid rgba(255,255,255,0.15)", color: "rgba(253, 248, 243, 0.5)" }}>LOCAL SUPPORT</span>
           </div>
         </div>
       </div>
