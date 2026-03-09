@@ -2,9 +2,9 @@ import Link from "next/link";
 
 export default function Hero() {
   // Split title into words for stagger animation (motion spec: 55ms per word, 600ms ease-out)
-  const titleWords = ["Guyana's", "Internet."];
-  const highlightWords = ["Finally", "Done"];
-  const trailWords = ["Right."];
+  const titleWords = ["Connecting", "Guyana,"];
+  const highlightWords = ["One", "Community"];
+  const trailWords = ["at", "a", "Time"];
 
   return (
     <section id="home" className="min-h-screen flex items-center relative overflow-hidden" style={{ paddingTop: 72, background: "var(--cream)" }}>
