@@ -74,19 +74,18 @@ export default function SignupPage() {
 
       if (subErr) throw subErr;
 
-      // 3. Sync to UISP CRM (non-blocking)
+      // 3. Notify team via Slack + email (non-blocking)
       try {
-        await fetch("/api/v1/uisp/sync-signup", {
+        await fetch("/api/leads", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            firstName: form.fullName.split(" ")[0],
-            lastName: form.fullName.split(" ").slice(1).join(" ") || form.fullName,
+            first_name: form.fullName.split(" ")[0],
+            last_name: form.fullName.split(" ").slice(1).join(" ") || form.fullName,
             phone: form.phone,
             email: form.email,
-            address: form.address,
-            region: form.region,
-            village: form.village,
+            plan_interest: form.planName,
+            source: "signup_flow",
           }),
         });
       } catch { /* non-blocking */ }

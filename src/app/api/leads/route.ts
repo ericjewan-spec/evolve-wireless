@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
-import { createClient as createUISPClient } from "@/lib/uisp-sync";
 
 export async function POST(request: NextRequest) {
   try {
@@ -23,7 +22,7 @@ export async function POST(request: NextRequest) {
 
     const supabase = await createClient();
 
-    // 1. Save to Supabase leads table
+    // 1. Save to Supabase
     const { data, error } = await supabase.from("leads").insert({
       first_name: first_name.trim(),
       last_name: last_name.trim(),
@@ -42,31 +41,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 2. Sync to UISP CRM (non-blocking — don't fail the request if UISP is down)
-    try {
-      await createUISPClient({
-        firstName: first_name.trim(),
-        lastName: last_name.trim(),
-        phone,
-        email: email?.trim() || undefined,
-      });
-      console.log(`UISP: Created client for ${first_name} ${last_name}`);
-    } catch (uispErr) {
-      console.error("UISP sync failed (non-blocking):", uispErr);
-      // Don't fail the request — lead is saved in Supabase
-    }
+    const leadInfo = {
+      name: `${first_name.trim()} ${last_name.trim()}`,
+      phone,
+      email: email?.trim() || "Not provided",
+      source: source || "website",
+      plan_interest: plan_interest || "Not specified",
+      timestamp: new Date().toLocaleString("en-GY", { timeZone: "America/Guyana" }),
+    };
 
-    // 3. Send WhatsApp notification to Evolve team (non-blocking)
-    try {
-      await sendLeadNotification({
-        name: `${first_name} ${last_name}`,
-        phone,
-        email: email || "Not provided",
-        source: source || "website",
-      });
-    } catch (notifyErr) {
-      console.error("Notification failed (non-blocking):", notifyErr);
-    }
+    // 2. Send Slack notification (non-blocking)
+    sendSlackNotification(leadInfo).catch((err) =>
+      console.error("Slack notification failed:", err)
+    );
+
+    // 3. Send email notification (non-blocking)
+    sendEmailNotification(leadInfo).catch((err) =>
+      console.error("Email notification failed:", err)
+    );
 
     return NextResponse.json({ success: true, id: data.id }, { status: 201 });
   } catch {
@@ -77,43 +69,184 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Send notification to Evolve team about new lead
-async function sendLeadNotification(lead: { name: string; phone: string; email: string; source: string }) {
-  const evolvePhone = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "5926092487";
-  const message = `🔔 New Lead from evolvewireless.gy\n\nName: ${lead.name}\nPhone: ${lead.phone}\nEmail: ${lead.email}\nSource: ${lead.source}\n\nRespond within 1 hour!`;
+/* ═══════════════════════════════════════
+   SLACK NOTIFICATION
+   Posts to #potential-customers channel
+   
+   Setup:
+   1. Go to api.slack.com/apps → Create New App → From Scratch
+   2. Name: "Evolve Leads Bot", Workspace: your workspace
+   3. Go to Incoming Webhooks → Activate → Add New Webhook
+   4. Select #potential-customers channel
+   5. Copy the webhook URL
+   6. Add to Vercel env vars: SLACK_LEADS_WEBHOOK_URL
+═══════════════════════════════════════ */
+async function sendSlackNotification(lead: {
+  name: string; phone: string; email: string;
+  source: string; plan_interest: string; timestamp: string;
+}) {
+  const webhookUrl = process.env.SLACK_LEADS_WEBHOOK_URL;
+  if (!webhookUrl) {
+    console.log("Slack: No SLACK_LEADS_WEBHOOK_URL configured. Lead:", lead.name);
+    return;
+  }
 
-  // Option 1: WhatsApp Business API (if configured)
-  const waApiKey = process.env.WHATSAPP_API_KEY;
-  const waPhoneId = process.env.WHATSAPP_PHONE_ID;
+  const payload = {
+    text: `🔔 New Potential Customer from evolvewireless.gy`,
+    blocks: [
+      {
+        type: "header",
+        text: { type: "plain_text", text: "🔔 New Potential Customer", emoji: true },
+      },
+      {
+        type: "section",
+        fields: [
+          { type: "mrkdwn", text: `*Name:*\n${lead.name}` },
+          { type: "mrkdwn", text: `*Phone:*\n<tel:${lead.phone}|${lead.phone}>` },
+          { type: "mrkdwn", text: `*Email:*\n${lead.email}` },
+          { type: "mrkdwn", text: `*Source:*\n${lead.source}` },
+          { type: "mrkdwn", text: `*Interest:*\n${lead.plan_interest}` },
+          { type: "mrkdwn", text: `*Time:*\n${lead.timestamp}` },
+        ],
+      },
+      {
+        type: "actions",
+        elements: [
+          {
+            type: "button",
+            text: { type: "plain_text", text: "💬 WhatsApp Customer", emoji: true },
+            url: `https://wa.me/${lead.phone.replace("+", "")}?text=${encodeURIComponent("Hi " + lead.name.split(" ")[0] + "! Thanks for your interest in Evolve Wireless. How can we help you get connected?")}`,
+            style: "primary",
+          },
+          {
+            type: "button",
+            text: { type: "plain_text", text: "📋 View in Supabase", emoji: true },
+            url: "https://supabase.com/dashboard/project/zqlixzklxrqewxvqhfzc/editor",
+          },
+        ],
+      },
+      {
+        type: "context",
+        elements: [
+          { type: "mrkdwn", text: "⏰ *Respond within 1 hour* — this lead came from evolvewireless.gy" },
+        ],
+      },
+    ],
+  };
 
-  if (waApiKey && waPhoneId) {
-    await fetch(`https://graph.facebook.com/v18.0/${waPhoneId}/messages`, {
+  const res = await fetch(webhookUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    throw new Error(`Slack webhook failed: ${res.status} ${await res.text()}`);
+  }
+}
+
+/* ═══════════════════════════════════════
+   EMAIL NOTIFICATION
+   Sends to your email when a new lead comes in
+   
+   Options (configure ONE in Vercel env vars):
+   
+   Option A — Resend (recommended, free tier: 100 emails/day):
+     RESEND_API_KEY=re_xxxxxxxxxxxx
+     NOTIFICATION_EMAIL=ericjewan@gmail.com
+   
+   Option B — SendGrid:
+     SENDGRID_API_KEY=SG.xxxxxxxxxxxx
+     NOTIFICATION_EMAIL=ericjewan@gmail.com
+   
+   Option C — Generic SMTP webhook (Zapier, Make, etc.):
+     EMAIL_WEBHOOK_URL=https://hooks.zapier.com/xxxxx
+═══════════════════════════════════════ */
+async function sendEmailNotification(lead: {
+  name: string; phone: string; email: string;
+  source: string; plan_interest: string; timestamp: string;
+}) {
+  const notificationEmail = process.env.NOTIFICATION_EMAIL;
+
+  // Option A: Resend
+  const resendKey = process.env.RESEND_API_KEY;
+  if (resendKey && notificationEmail) {
+    const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${waApiKey}`,
+        "Authorization": `Bearer ${resendKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        messaging_product: "whatsapp",
-        to: evolvePhone,
-        type: "text",
-        text: { body: message },
+        from: "Evolve Wireless <leads@evolvewireless.gy>",
+        to: notificationEmail,
+        subject: `🔔 New Lead: ${lead.name} — ${lead.phone}`,
+        html: `
+          <div style="font-family: sans-serif; max-width: 500px;">
+            <h2 style="color: #D4654A; margin-bottom: 16px;">🔔 New Potential Customer</h2>
+            <table style="width: 100%; border-collapse: collapse;">
+              <tr><td style="padding: 8px 0; color: #888; width: 100px;">Name</td><td style="padding: 8px 0; font-weight: bold;">${lead.name}</td></tr>
+              <tr><td style="padding: 8px 0; color: #888;">Phone</td><td style="padding: 8px 0; font-weight: bold;">${lead.phone}</td></tr>
+              <tr><td style="padding: 8px 0; color: #888;">Email</td><td style="padding: 8px 0;">${lead.email}</td></tr>
+              <tr><td style="padding: 8px 0; color: #888;">Source</td><td style="padding: 8px 0;">${lead.source}</td></tr>
+              <tr><td style="padding: 8px 0; color: #888;">Interest</td><td style="padding: 8px 0;">${lead.plan_interest}</td></tr>
+              <tr><td style="padding: 8px 0; color: #888;">Time</td><td style="padding: 8px 0;">${lead.timestamp}</td></tr>
+            </table>
+            <div style="margin-top: 20px;">
+              <a href="https://wa.me/${lead.phone.replace("+", "")}" style="display: inline-block; padding: 10px 20px; background: #25D366; color: white; border-radius: 20px; text-decoration: none; font-weight: bold;">💬 WhatsApp ${lead.name.split(" ")[0]}</a>
+            </div>
+            <p style="margin-top: 16px; color: #999; font-size: 12px;">Respond within 1 hour — from evolvewireless.gy</p>
+          </div>
+        `,
+      }),
+    });
+
+    if (!res.ok) {
+      throw new Error(`Resend email failed: ${res.status}`);
+    }
+    return;
+  }
+
+  // Option B: SendGrid
+  const sendgridKey = process.env.SENDGRID_API_KEY;
+  if (sendgridKey && notificationEmail) {
+    const res = await fetch("https://api.sendgrid.com/v3/mail/send", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${sendgridKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        personalizations: [{ to: [{ email: notificationEmail }] }],
+        from: { email: "leads@evolvewireless.gy", name: "Evolve Wireless" },
+        subject: `🔔 New Lead: ${lead.name} — ${lead.phone}`,
+        content: [{
+          type: "text/plain",
+          value: `New Potential Customer\n\nName: ${lead.name}\nPhone: ${lead.phone}\nEmail: ${lead.email}\nSource: ${lead.source}\nInterest: ${lead.plan_interest}\nTime: ${lead.timestamp}\n\nWhatsApp: https://wa.me/${lead.phone.replace("+", "")}`,
+        }],
+      }),
+    });
+
+    if (!res.ok) {
+      throw new Error(`SendGrid email failed: ${res.status}`);
+    }
+    return;
+  }
+
+  // Option C: Generic webhook
+  const emailWebhook = process.env.EMAIL_WEBHOOK_URL;
+  if (emailWebhook) {
+    await fetch(emailWebhook, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        subject: `New Lead: ${lead.name} — ${lead.phone}`,
+        lead,
       }),
     });
     return;
   }
 
-  // Option 2: Send email notification via Supabase Edge Function or webhook
-  const webhookUrl = process.env.LEAD_NOTIFICATION_WEBHOOK;
-  if (webhookUrl) {
-    await fetch(webhookUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text: message, lead }),
-    });
-    return;
-  }
-
-  // Fallback: just log it
-  console.log("📩 NEW LEAD:", message);
+  // Fallback: log
+  console.log("📩 EMAIL NOT CONFIGURED — New lead:", lead.name, lead.phone, lead.email);
 }
