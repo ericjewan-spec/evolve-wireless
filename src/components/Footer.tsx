@@ -35,7 +35,7 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 pb-12" style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
           <div>
             <Link href="/">
-              <Logo className="h-[42px] w-auto" />
+              <Logo className="h-[42px] w-auto" variant="dark" />
             </Link>
             <p className="text-[0.88rem] leading-[1.75] mt-4 max-w-[280px]" style={{ color: "rgba(253, 248, 243, 0.6)" }}>
               Connecting Guyana&apos;s homes and businesses with fast, reliable
