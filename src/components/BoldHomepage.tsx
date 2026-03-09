@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Logo } from "./Logo";
 
 /* ═══════════════════════════════════════════════════════════
    BOLD INDUSTRIAL SIGNAL — EVOLVE WIRELESS HOMEPAGE
