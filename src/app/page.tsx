@@ -1,6 +1,5 @@
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
-import PlansSection from "@/components/PlansSection";
 import LeadForm from "@/components/LeadForm";
 import Footer from "@/components/Footer";
 import WhatsAppFAB from "@/components/WhatsAppFAB";
@@ -23,6 +22,26 @@ export default function HomePage() {
         </p>
       </div>
 
+      {/* ═══ QUICK ACTIONS — Strategic entry points ═══ */}
+      <section className="py-8" style={{ background: "var(--cream)" }}>
+        <div className="container">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {[
+              { href: "/coverage", icon: "📍", label: "Check Coverage", desc: "See if we're in your area", color: "var(--terracotta)" },
+              { href: "/plans", icon: "📋", label: "View Plans", desc: "From GYD 5,000/mo", color: "var(--teal)" },
+              { href: "/signup", icon: "🚀", label: "Sign Up", desc: "Get online in 48 hours", color: "var(--terracotta)" },
+              { href: "/login", icon: "👤", label: "My Account", desc: "Pay bills & get support", color: "var(--teal)" },
+            ].map((a) => (
+              <Link key={a.label} href={a.href} className="card p-4 text-center" style={{ cursor: "pointer", textDecoration: "none" }}>
+                <div className="text-2xl mb-1">{a.icon}</div>
+                <div className="text-sm font-bold" style={{ fontFamily: "'Bricolage Grotesque', serif", color: a.color }}>{a.label}</div>
+                <div className="text-xs" style={{ color: "var(--text3)" }}>{a.desc}</div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ═══ FEATURES ═══ */}
       <section id="features" className="section" style={{ background: "var(--soft-bg)" }}>
         <div className="container">
@@ -32,19 +51,19 @@ export default function HomePage() {
                 icon: "🔒",
                 title: "Your Connection Never Drops. We Guarantee It.",
                 body: "Your children's education, your business calls, your family WhatsApp — they all depend on a connection that never lets you down. We engineer our network for Guyana's real conditions, not textbook scenarios.",
-                link: { label: "Our reliability promise →", href: "#why" },
+                link: { label: "Check your coverage →", href: "/coverage" },
               },
               {
                 icon: "⚡",
                 title: "Live in 48 Hours. Not 48 Days.",
                 body: "Our certified technicians serve East Coast Demerara, Region 1, and Port Kaituma. Once you sign up, we confirm your appointment within 24 hours. Your internet is live before the week is out.",
-                link: { label: "Book your installation →", href: "/contact" },
+                link: { label: "Sign up now →", href: "/signup" },
               },
               {
                 icon: "🇬🇾",
                 title: "Support That Actually Picks Up.",
                 body: "When something goes wrong, you reach a real Guyanese technician — not an overseas call centre, not an automated bot. We know your community because we live in it. That is the Evolve difference.",
-                link: { label: "Meet our support team →", href: "#about" },
+                link: { label: "Get support →", href: "/portal/support" },
               },
             ].map((f, i) => (
               <div key={f.title} className={`card p-8 reveal ${i > 0 ? `reveal-delay-${i}` : ""}`}>
@@ -57,6 +76,24 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      <div className="section-divider" />
+
+      {/* ═══ COVERAGE CTA STRIP ═══ */}
+      <div className="py-10" style={{ background: "linear-gradient(135deg, rgba(42, 157, 143, 0.06), rgba(212, 101, 74, 0.04))" }}>
+        <div className="container">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+            <div>
+              <h3 className="text-lg font-bold" style={{ fontFamily: "'Bricolage Grotesque', serif" }}>Not sure if we cover your area?</h3>
+              <p className="text-sm" style={{ color: "var(--text3)" }}>Enter your address and find out instantly — it takes 10 seconds.</p>
+            </div>
+            <div className="flex gap-3 flex-wrap">
+              <Link href="/coverage" className="btn btn-primary">Check My Coverage →</Link>
+              <Link href="/plans" className="btn btn-ghost">View All Plans</Link>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <div className="section-divider" />
 
@@ -131,8 +168,37 @@ export default function HomePage() {
               </div>
             ))}
           </div>
+
+          {/* Post-services CTA */}
+          <div className="flex gap-3 justify-center flex-wrap mt-10 reveal">
+            <Link href="/plans" className="btn btn-primary">See All Plans & Pricing →</Link>
+            <Link href="/signup" className="btn btn-outline">Sign Up Now</Link>
+          </div>
         </div>
       </section>
+
+      <div className="section-divider" />
+
+      {/* ═══ ALREADY A CUSTOMER? — Portal strip ═══ */}
+      <div className="py-8" style={{ background: "var(--warm-bg)", borderTop: "1px solid rgba(44, 24, 16, 0.06)", borderBottom: "1px solid rgba(44, 24, 16, 0.06)" }}>
+        <div className="container">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <span className="text-xl">👋</span>
+              <div>
+                <div className="text-sm font-bold" style={{ fontFamily: "'Bricolage Grotesque', serif", color: "var(--text)" }}>Already a customer?</div>
+                <div className="text-xs" style={{ color: "var(--text3)" }}>Manage your account, pay bills, or get support.</div>
+              </div>
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              <Link href="/portal" className="btn btn-ghost" style={{ padding: "8px 16px", fontSize: "0.82rem" }}>📊 Dashboard</Link>
+              <Link href="/portal/billing" className="btn btn-ghost" style={{ padding: "8px 16px", fontSize: "0.82rem" }}>💳 Pay Bill</Link>
+              <Link href="/portal/support" className="btn btn-ghost" style={{ padding: "8px 16px", fontSize: "0.82rem" }}>🎫 Get Support</Link>
+              <Link href="/portal/account" className="btn btn-ghost" style={{ padding: "8px 16px", fontSize: "0.82rem" }}>👤 My Account</Link>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <div className="section-divider" />
 
@@ -147,9 +213,9 @@ export default function HomePage() {
           <h3 className="mt-12 mb-6 text-lg font-bold reveal" style={{ fontFamily: "'Bricolage Grotesque', serif" }}>📍 East Coast Demerara Plans</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5 reveal reveal-delay-1">
             {[
-              { name: "Starter", price: "5,000", speed: "Basic", features: ["Browsing & email", "1–2 devices", "Email support", "Free router"] },
-              { name: "Family", price: "8,000", speed: "Standard", popular: true, features: ["Streaming & video calls", "4–6 devices", "24/7 WhatsApp support", "Free router", "No throttling"] },
-              { name: "Power", price: "10,000", speed: "Premium", features: ["Work from home + streaming", "8+ devices", "Priority support", "Free router", "Static IP available"] },
+              { name: "Starter", price: "5,000", features: ["Browsing & email", "1–2 devices", "Email support", "Free router"] },
+              { name: "Family", price: "8,000", popular: true, features: ["Streaming & video calls", "4–6 devices", "24/7 WhatsApp support", "Free router", "No throttling"] },
+              { name: "Power", price: "10,000", features: ["Work from home + streaming", "8+ devices", "Priority support", "Free router", "Static IP available"] },
             ].map((p) => (
               <div key={p.name} className="card p-7 text-center" style={p.popular ? { borderColor: "var(--terracotta)", borderWidth: 2 } : {}}>
                 {p.popular && <div className="text-xs font-bold uppercase tracking-widest mb-3 py-1 px-3 rounded-full inline-block" style={{ background: "var(--terracotta)", color: "#fff", fontSize: "0.7rem" }}>Most Guyanese Families Choose This</div>}
@@ -165,8 +231,8 @@ export default function HomePage() {
                     </li>
                   ))}
                 </ul>
-                <Link href="/contact" className={`btn ${p.popular ? "btn-primary" : "btn-outline"} w-full justify-center`}>
-                  Get Connected
+                <Link href="/signup" className={`btn ${p.popular ? "btn-primary" : "btn-outline"} w-full justify-center`}>
+                  Sign Up →
                 </Link>
               </div>
             ))}
@@ -194,25 +260,29 @@ export default function HomePage() {
                     </li>
                   ))}
                 </ul>
-                <Link href="/contact" className={`btn ${p.popular ? "btn-cyan" : "btn-outline"} w-full justify-center`}>
-                  Get Connected
+                <Link href="/signup" className={`btn ${p.popular ? "btn-cyan" : "btn-outline"} w-full justify-center`}>
+                  Sign Up →
                 </Link>
               </div>
             ))}
           </div>
 
-          {/* Starlink */}
+          {/* Starlink + full plans link */}
           <div className="card p-8 mt-10 reveal" style={{ background: "linear-gradient(135deg, rgba(42, 157, 143, 0.04), rgba(233, 180, 76, 0.04))", borderColor: "rgba(42, 157, 143, 0.15)" }}>
             <div className="flex flex-col md:flex-row md:items-center gap-6">
               <div className="text-4xl">🛰️</div>
               <div className="flex-1">
                 <h3 className="text-lg font-bold mb-2" style={{ fontFamily: "'Bricolage Grotesque', serif" }}>Starlink Installation Service</h3>
                 <p className="text-sm leading-relaxed" style={{ color: "var(--text3)" }}>
-                  We supply, install, and provide ongoing support for Starlink satellite systems. Ideal for remote locations beyond traditional wireless reach. Professional dish mounting, alignment, router setup, and network integration. Available at cost — contact us for a quote.
+                  We supply, install, and provide ongoing support for Starlink satellite systems. Available at cost — contact us for a quote.
                 </p>
               </div>
               <Link href="/contact" className="btn btn-cyan whitespace-nowrap">Get a Quote</Link>
             </div>
+          </div>
+
+          <div className="text-center mt-8 reveal">
+            <Link href="/plans" className="text-sm font-semibold" style={{ color: "var(--terracotta)" }}>See detailed plan comparison on our plans page →</Link>
           </div>
         </div>
       </section>
@@ -228,7 +298,7 @@ export default function HomePage() {
             {[
               { q: "What happens if my internet goes down in the middle of the night?", a: "You message us on WhatsApp — we monitor it around the clock. For known outages, we broadcast a status update before you wake up. For individual issues, a technician responds within one hour." },
               { q: "Is there a contract? What if I want to cancel?", a: "No contracts. No cancellation fees. No fine print. You pay month to month, and if you need to pause or cancel, you contact us and it is done. We earn your business every single month, and we prefer it that way." },
-              { q: "How fast is the installation, really?", a: "Our average is 48 hours from sign-up to live internet. For ECD customers, same-week installation is standard. For Port Kaituma, Mabaruma, Matthews Ridge and Baramita, we book within 7 days. We tell you the honest timeline upfront." },
+              { q: "How fast is the installation, really?", a: "Our average is 48 hours from sign-up to live internet. For ECD customers, same-week installation is standard. For Port Kaituma, Mabaruma, Matthews Ridge and Baramita, we book within 7 days." },
               { q: "Do I need to buy my own equipment?", a: "No. Your plan includes a free router. Our technician installs everything — the outdoor antenna, cabling, and indoor router. You do not need to buy, source, or configure anything." },
               { q: "Can I upgrade or downgrade my plan?", a: "Yes, any time. Contact us via WhatsApp at +592 609-2487 and we adjust your plan from the next billing cycle. No fees, no penalties." },
               { q: "Is Starlink available through Evolve?", a: "Yes. We supply, install, and support Starlink satellite systems across Guyana's most remote communities. Installation is available at cost — contact us for pricing and availability in your area." },
@@ -238,6 +308,14 @@ export default function HomePage() {
                 <p className="text-sm leading-relaxed" style={{ color: "var(--text3)" }}>{faq.a}</p>
               </div>
             ))}
+          </div>
+          {/* Post-FAQ support CTA */}
+          <div className="text-center mt-8 reveal">
+            <p className="text-sm mb-3" style={{ color: "var(--text3)" }}>Still have questions?</p>
+            <div className="flex gap-3 justify-center flex-wrap">
+              <a href="https://wa.me/5926092487" className="btn btn-cyan" target="_blank" rel="noopener" style={{ padding: "10px 20px", fontSize: "0.85rem" }}>💬 WhatsApp Us</a>
+              <Link href="/portal/support" className="btn btn-ghost" style={{ padding: "10px 20px", fontSize: "0.85rem" }}>🎫 Submit a Ticket</Link>
+            </div>
           </div>
         </div>
       </section>
@@ -255,9 +333,9 @@ export default function HomePage() {
           </h2>
           <p className="text-base mb-7" style={{ color: "var(--text3)" }}>Check your coverage, pick a plan, or chat with us on WhatsApp.</p>
           <div className="flex gap-3 justify-center flex-wrap">
-            <Link href="/plans" className="btn btn-primary">Check Your Coverage — It&apos;s Free</Link>
-            <a href="https://wa.me/5926092487" className="btn btn-cyan" target="_blank" rel="noopener">💬 Chat on WhatsApp</a>
-            <Link href="/contact" className="btn btn-outline">Contact Us</Link>
+            <Link href="/coverage" className="btn btn-primary">Check My Coverage →</Link>
+            <Link href="/signup" className="btn btn-outline">Sign Up Now</Link>
+            <a href="https://wa.me/5926092487" className="btn btn-cyan" target="_blank" rel="noopener">💬 WhatsApp Us</a>
           </div>
         </div>
       </div>
@@ -293,6 +371,16 @@ export default function HomePage() {
                     <div className="text-sm font-semibold" style={{ color: "var(--text)" }}>Service Areas</div>
                     <span className="text-sm" style={{ color: "var(--text3)" }}>East Coast Demerara · Port Kaituma · Mabaruma · Matthews Ridge · Baramita</span>
                   </div>
+                </div>
+              </div>
+              {/* Existing customer quick links */}
+              <div className="mt-8 p-5 rounded-xl reveal reveal-delay-3" style={{ background: "rgba(42, 157, 143, 0.06)", border: "1px solid rgba(42, 157, 143, 0.12)" }}>
+                <div className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: "var(--teal)" }}>Existing Customers</div>
+                <div className="flex gap-2 flex-wrap">
+                  <Link href="/portal" className="text-xs font-semibold px-3 py-1.5 rounded-full" style={{ background: "white", color: "var(--teal)", border: "1px solid rgba(42,157,143,0.2)" }}>📊 Dashboard</Link>
+                  <Link href="/portal/billing" className="text-xs font-semibold px-3 py-1.5 rounded-full" style={{ background: "white", color: "var(--teal)", border: "1px solid rgba(42,157,143,0.2)" }}>💳 Pay Bill</Link>
+                  <Link href="/portal/support" className="text-xs font-semibold px-3 py-1.5 rounded-full" style={{ background: "white", color: "var(--teal)", border: "1px solid rgba(42,157,143,0.2)" }}>🎫 Support Ticket</Link>
+                  <Link href="/portal/account" className="text-xs font-semibold px-3 py-1.5 rounded-full" style={{ background: "white", color: "var(--teal)", border: "1px solid rgba(42,157,143,0.2)" }}>👤 Account Settings</Link>
                 </div>
               </div>
             </div>
