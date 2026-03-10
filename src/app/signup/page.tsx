@@ -59,51 +59,32 @@ export default function SignupPage() {
       let userId = signUpData.user?.id;
       
       if (!signUpData.session) {
-        // Email confirmation might be required — sign in explicitly
         const { data: signInData, error: signInErr } = await supabase.auth.signInWithPassword({
           email: form.email,
           password: form.password,
         });
-        if (signInErr) {
-          // If sign-in fails (e.g. email needs confirmation), still try to proceed
-          // The user was created, we just can't insert subscription right now
-          console.warn("Auto sign-in failed:", signInErr.message);
-        } else {
-          userId = signInData.user?.id;
+        if (!signInErr && signInData.user) {
+          userId = signInData.user.id;
         }
       }
 
       if (!userId) throw new Error("Account creation failed — please try again");
 
-      // Step 3: Update profile with full details
-      await supabase.from("profiles").upsert({
-        id: userId,
-        full_name: form.fullName,
-        phone: form.phone,
-        status: "pending",
-        role: "customer",
-      }, { onConflict: "id" }).then(() => {});
-
-      // Step 4: Insert subscription — now auth.uid() matches customer_id
-      const serviceAddress = {
-        line1: form.address,
-        region: form.region === "ecd" ? "East Coast Demerara" : "Region 1",
-        village: form.village,
-        plan_name: form.planName,
-        plan_price: form.planPrice,
-      };
-
-      const { error: subErr } = await supabase.from("subscriptions").insert({
-        customer_id: userId,
-        plan_id: null, // Plans aren't in DB yet — store details in service_address
-        status: "pending_install",
-        service_address: serviceAddress,
+      // Step 3: Create profile + subscription via SECURITY DEFINER function
+      // This bypasses RLS entirely — no more policy errors
+      const { error: rpcErr } = await supabase.rpc("create_signup", {
+        p_user_id: userId,
+        p_full_name: form.fullName,
+        p_phone: form.phone,
+        p_address: form.address,
+        p_region: form.region === "ecd" ? "East Coast Demerara" : "Region 1",
+        p_village: form.village,
+        p_plan_name: form.planName,
+        p_plan_price: form.planPrice,
       });
 
-      if (subErr) {
-        console.error("Subscription error:", subErr.message);
-        // Don't fail the whole signup — account was created successfully
-        // The subscription can be added manually by the team
+      if (rpcErr) {
+        console.error("Signup RPC error:", rpcErr.message);
       }
 
       // Step 5: Send notifications (fire-and-forget via API)
