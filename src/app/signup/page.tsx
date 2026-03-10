@@ -88,14 +88,18 @@ export default function SignupPage() {
       if (!authData.user) throw new Error("Account creation failed");
 
       // 2. Create subscription
+      // plan_id might be a UUID (from DB) or a slug (from fallback) — only insert UUID
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(form.planId);
       const { error: subErr } = await supabase.from("subscriptions").insert({
         customer_id: authData.user.id,
-        plan_id: form.planId,
+        plan_id: isUUID ? form.planId : null,
         status: "pending_install",
         service_address: {
           line1: form.address,
           region: form.region === "ecd" ? "East Coast Demerara" : "Region 1",
           village: form.village,
+          plan_name: form.planName,
+          plan_price: form.planPrice,
         },
       });
 
