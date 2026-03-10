@@ -27,20 +27,47 @@ export default function SignupPage() {
 
   // Load plans when reaching step 3
   async function loadPlans(region: string) {
-    const { data } = await supabase
-      .from("plans")
-      .select("*")
-      .eq("region", region)
-      .eq("is_active", true)
-      .order("sort_order");
-    setPlans(data || []);
+    try {
+      const { data, error } = await supabase
+        .from("plans")
+        .select("*")
+        .eq("region", region)
+        .eq("is_active", true)
+        .order("sort_order");
+      
+      if (data && data.length > 0) {
+        setPlans(data);
+      } else {
+        // Fallback: hardcoded plans if DB query returns empty
+        setPlans(getFallbackPlans(region));
+      }
+    } catch {
+      // Fallback if query fails entirely
+      setPlans(getFallbackPlans(region));
+    }
+  }
+
+  function getFallbackPlans(region: string) {
+    if (region === "ecd") {
+      return [
+        { id: "ecd-starter", name: "ECD Starter", price_gyd: 5000, speed_down_mbps: 10, features: ["Browsing & email", "1-2 devices", "Email support", "Free router"] },
+        { id: "ecd-family", name: "ECD Family", price_gyd: 8000, speed_down_mbps: 25, features: ["Streaming & video calls", "4-6 devices", "24/7 WhatsApp support", "Free router", "No throttling"] },
+        { id: "ecd-power", name: "ECD Power", price_gyd: 10000, speed_down_mbps: 50, features: ["Work from home + streaming", "8+ devices", "Priority support", "Free router", "Static IP available"] },
+      ];
+    }
+    return [
+      { id: "r1-essential", name: "R1 Essential", price_gyd: 10000, speed_down_mbps: 5, features: ["Reliable connectivity", "Browsing, email & WhatsApp", "1-3 devices", "Local tech support"] },
+      { id: "r1-standard", name: "R1 Standard", price_gyd: 15000, speed_down_mbps: 15, features: ["Streaming & video calls", "4-6 devices", "24/7 WhatsApp support", "Free router included"] },
+      { id: "r1-premium", name: "R1 Premium", price_gyd: 25000, speed_down_mbps: 30, features: ["Full household coverage", "8+ devices", "Priority support", "Best speeds available", "Static IP available"] },
+    ];
   }
 
   async function nextStep() {
     if (step === 1) {
+      // Load plans before advancing to step 2 (Choose Plan)
       await loadPlans(form.region);
     }
-    if (step < STEPS.length - 1) setStep(step + 1);
+    setStep((s) => Math.min(s + 1, STEPS.length - 1));
   }
 
   async function handleSubmit() {
@@ -227,7 +254,7 @@ export default function SignupPage() {
                       </div>
                     </div>
                     <div className="text-xs" style={{ color: "var(--text3)" }}>
-                      {p.speed_down_mbps} Mbps · {(p.features as unknown as string[])?.join(" · ")}
+                      {p.speed_down_mbps} Mbps · {(Array.isArray(p.features) ? p.features : JSON.parse(p.features || "[]")).join(" · ")}
                     </div>
                   </div>
                 ))}
