@@ -11,6 +11,7 @@ const NAV_LINKS = [
   { href: "/#services", label: "Services" },
   { href: "/coverage", label: "Coverage" },
   { href: "/plans", label: "Packages" },
+  { href: "/solar", label: "☀️ Solar", isSolar: true },
   { href: "/contact", label: "Contact" },
 ];
 

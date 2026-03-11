@@ -20,6 +20,12 @@ const SERVICES = [
   "Starlink Support",
 ];
 
+const SOLAR_LINKS = [
+  { href: "/solar", label: "Solar Solutions" },
+  { href: "/solar/gallery", label: "Project Gallery" },
+  { href: "/solar/quote", label: "Request a Quote" },
+];
+
 const SUPPORT = [
   { href: "/contact", label: "Report an Outage" },
   { href: "/contact", label: "Billing Help" },
@@ -88,6 +94,21 @@ export default function Footer() {
           </div>
 
           <div>
+            <h5 className="text-[0.8rem] font-bold uppercase tracking-[0.12em] mb-5" style={{ color: "#E9B44C" }}>
+              ☀️ Evolve Solar Solutions
+            </h5>
+            <ul className="flex flex-col gap-3 list-none">
+              {SOLAR_LINKS.map((s) => (
+                <li key={s.label}>
+                  <Link href={s.href} className="text-[0.88rem] transition-colors" style={{ color: "rgba(253, 248, 243, 0.55)" }}>
+                    {s.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div>
             <h5 className="text-[0.8rem] font-bold uppercase tracking-[0.12em] mb-5" style={{ color: "#FDF8F3" }}>
               Support
             </h5>
@@ -105,7 +126,7 @@ export default function Footer() {
 
         <div className="flex items-center justify-between pt-6 flex-wrap gap-3">
           <p className="text-[0.82rem]" style={{ color: "rgba(253, 248, 243, 0.4)" }}>
-            &copy; {new Date().getFullYear()} Evolve Wireless Internet. All rights reserved. Registered in Guyana. 🇬🇾
+            &copy; {new Date().getFullYear()} Evolve Wireless Internet & Solar Solutions. All rights reserved. Registered in Guyana. 🇬🇾
           </p>
           <div className="flex gap-4 flex-wrap">
             <span className="text-[0.7rem] px-2 py-0.5 rounded-full" style={{ border: "1px solid rgba(255,255,255,0.15)", color: "rgba(253, 248, 243, 0.5)" }}>GUYANESE OWNED</span>
