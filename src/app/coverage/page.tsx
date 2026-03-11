@@ -98,6 +98,12 @@ export default function CoveragePage() {
               </button>
             </form>
 
+            <div className="mt-4">
+              <Link href="/coverage/map" className="text-sm font-semibold" style={{ color: "var(--teal)" }}>
+                🗺️ Or use our Interactive Coverage Map to pin your exact location →
+              </Link>
+            </div>
+
             {/* Result */}
             {result && (
               <div className="mt-6 p-6 rounded-2xl text-left max-w-lg mx-auto" style={{
