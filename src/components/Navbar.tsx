@@ -8,9 +8,8 @@ import { Logo } from "./Logo";
 const NAV_LINKS = [
   { href: "/", label: "Home" },
   { href: "/#about", label: "About" },
-  { href: "/#services", label: "Services" },
-  { href: "/coverage", label: "Coverage" },
   { href: "/plans", label: "Packages" },
+  { href: "/coverage", label: "Coverage" },
   { href: "/solar", label: "☀️ Solar", isSolar: true },
   { href: "/micro-strategy", label: "💡 Micro Strategy", isSolar: true },
   { href: "/contact", label: "Contact" },
