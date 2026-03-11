@@ -94,9 +94,12 @@ function wrap(content: string): string {
   `;
 }
 
-/** Welcome email sent after signup */
+/** Welcome email sent after signup — sends to customer + admin notification */
 export async function sendWelcomeEmail(to: string, name: string, planName: string) {
-  return sendEmail({
+  const ADMIN_EMAIL = "ericjewan@gmail.com";
+  
+  // Send welcome to customer (may fail if domain not verified in Resend)
+  const customerResult = await sendEmail({
     to,
     subject: `Welcome to Evolve Wireless, ${name.split(" ")[0]}! 🇬🇾`,
     html: wrap(`
@@ -120,6 +123,25 @@ export async function sendWelcomeEmail(to: string, name: string, planName: strin
       </p>
     `),
   });
+
+  // Always send admin notification (to verified email — always works)
+  await sendEmail({
+    to: ADMIN_EMAIL,
+    subject: `🎉 New Signup: ${name} — ${planName}`,
+    html: wrap(`
+      <h2 style="font-size: 22px; margin-bottom: 8px;">New Customer Signup!</h2>
+      <table style="width: 100%; font-size: 14px; color: #4A3728;">
+        <tr><td style="padding: 8px 0; font-weight: 600; width: 100px;">Name</td><td>${name}</td></tr>
+        <tr><td style="padding: 8px 0; font-weight: 600;">Email</td><td>${to}</td></tr>
+        <tr><td style="padding: 8px 0; font-weight: 600;">Plan</td><td>${planName}</td></tr>
+      </table>
+      <p style="color: #8B7355; font-size: 14px; margin-top: 16px;">
+        ${customerResult.success ? "✅ Welcome email sent to customer" : "⚠️ Customer email failed (domain not verified in Resend) — follow up manually"}
+      </p>
+    `),
+  });
+
+  return customerResult;
 }
 
 /** Contact form confirmation to the customer */
