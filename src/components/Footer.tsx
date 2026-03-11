@@ -28,6 +28,7 @@ const SOLAR_LINKS = [
 
 const MICRO_STRATEGY_LINKS = [
   { href: "/micro-strategy", label: "Overview" },
+  { href: "/micro-strategy/catalog", label: "Website Catalog" },
   { href: "/micro-strategy/portfolio", label: "Portfolio" },
   { href: "/micro-strategy/consultation", label: "Book Consultation" },
 ];
