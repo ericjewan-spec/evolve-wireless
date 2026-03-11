@@ -5,14 +5,89 @@ import Link from "next/link";
 
 // Tower data — add more towers here as you expand
 const TOWERS = [
+  // East Coast Demerara towers — coverage extends from Cummings Lodge to Nonpareil and beyond
   {
     id: "success-ecd",
     name: "Success Tower",
     location: "Success, East Coast Demerara",
-    lat: 6.8120574,
-    lng: -58.0718886,
-    radiusKm: 8, // max coverage radius in km
+    lat: 6.8121,
+    lng: -58.0719,
+    radiusKm: 6,
     color: "#D4654A",
+  },
+  {
+    id: "better-hope-ecd",
+    name: "Better Hope Tower",
+    location: "Better Hope, East Coast Demerara",
+    lat: 6.8178,
+    lng: -58.0890,
+    radiusKm: 5,
+    color: "#D4654A",
+  },
+  {
+    id: "cummings-lodge-ecd",
+    name: "Cummings Lodge Tower",
+    location: "Cummings Lodge, East Coast Demerara",
+    lat: 6.8179,
+    lng: -58.1114,
+    radiusKm: 5,
+    color: "#D4654A",
+  },
+  {
+    id: "good-hope-ecd",
+    name: "Good Hope Tower",
+    location: "Good Hope, East Coast Demerara",
+    lat: 6.7990,
+    lng: -58.0500,
+    radiusKm: 6,
+    color: "#D4654A",
+  },
+  {
+    id: "nonpareil-ecd",
+    name: "Non Pareil Tower",
+    location: "Non Pareil, East Coast Demerara",
+    lat: 6.7667,
+    lng: -58.0167,
+    radiusKm: 6,
+    color: "#D4654A",
+  },
+  {
+    id: "unity-ecd",
+    name: "Unity Tower",
+    location: "Unity, East Coast Demerara",
+    lat: 6.7420,
+    lng: -57.9850,
+    radiusKm: 6,
+    color: "#D4654A",
+  },
+  {
+    id: "mahaica-ecd",
+    name: "Mahaica Tower",
+    location: "Mahaica, East Coast Demerara",
+    lat: 6.6841,
+    lng: -57.9218,
+    radiusKm: 7,
+    color: "#D4654A",
+  },
+  // New Amsterdam
+  {
+    id: "new-amsterdam",
+    name: "New Amsterdam Tower",
+    location: "New Amsterdam, Berbice",
+    lat: 6.2426,
+    lng: -57.5190,
+    radiusKm: 8,
+    color: "#2A9D8F",
+  },
+  // Region 1
+  {
+    id: "port-kaituma",
+    name: "Port Kaituma Tower",
+    location: "Port Kaituma, Region 1",
+    lat: 7.7298,
+    lng: -59.8751,
+    radiusKm: 10,
+    color: "#E9B44C",
   },
 ];
 
@@ -52,10 +127,9 @@ export default function CoverageMapPage() {
     const L = (window as any).L;
     if (!L || !mapRef.current) return;
 
-    const tower = TOWERS[0];
     const map = L.map(mapRef.current, {
-      center: [tower.lat, tower.lng],
-      zoom: 12,
+      center: [6.77, -58.00],
+      zoom: 11,
       zoomControl: true,
       scrollWheelZoom: true,
     });
@@ -119,19 +193,31 @@ export default function CoverageMapPage() {
     lat: number,
     lng: number
   ) {
-    const tower = TOWERS[0];
-
-    // Remove old marker
+    // Remove old marker and lines
     if (userMarkerRef.current) {
       map.removeLayer(userMarkerRef.current);
     }
+    // Remove old polylines
+    map.eachLayer((layer: { options?: { className?: string }; remove?: () => void }) => {
+      if (layer.options?.className === "user-line") layer.remove?.();
+    });
 
-    // Calculate distance
-    const towerLatLng = L.latLng(tower.lat, tower.lng);
+    // Find nearest tower and check coverage against ALL towers
     const userLatLng = L.latLng(lat, lng);
-    const dist = towerLatLng.distanceTo(userLatLng) / 1000; // km
+    let nearestTower = TOWERS[0];
+    let nearestDist = Infinity;
+    let covered = false;
 
-    const covered = dist <= tower.radiusKm;
+    TOWERS.forEach((t: { lat: number; lng: number; radiusKm: number }) => {
+      const d = L.latLng(t.lat, t.lng).distanceTo(userLatLng) / 1000;
+      if (d < nearestDist) {
+        nearestDist = d;
+        nearestTower = t;
+      }
+      if (d <= t.radiusKm) covered = true;
+    });
+
+    const dist = nearestDist;
 
     // User marker
     const userIcon = L.divIcon({
@@ -148,18 +234,15 @@ export default function CoverageMapPage() {
           <strong style="font-size:13px;color:${covered ? "#2A9D8F" : "#E74C3C"}">
             ${covered ? "✅ You're in coverage!" : "❌ Outside coverage area"}
           </strong><br>
-          <span style="color:#666;font-size:12px">${dist.toFixed(1)}km from ${tower.name}</span>
+          <span style="color:#666;font-size:12px">${dist.toFixed(1)}km from ${nearestTower.name}</span>
         </div>`
       )
       .openPopup();
 
-    // Draw line from tower to user
-    L.polyline(
-      [
-        [tower.lat, tower.lng],
-        [lat, lng],
-      ],
-      { color: covered ? "#2A9D8F" : "#E74C3C", weight: 2, dashArray: "6 4", opacity: 0.6 }
+    // Draw line to nearest tower
+    const line = L.polyline(
+      [[nearestTower.lat, nearestTower.lng], [lat, lng]],
+      { color: covered ? "#2A9D8F" : "#E74C3C", weight: 2, dashArray: "6 4", opacity: 0.6, className: "user-line" }
     ).addTo(map);
 
     userMarkerRef.current = marker;
@@ -222,7 +305,7 @@ export default function CoverageMapPage() {
             <a
               href={`https://wa.me/5926092487?text=${encodeURIComponent(
                 userPin
-                  ? `Hi! I checked the coverage map. I'm ${distance}km from your Success tower. ${inCoverage ? "I'm in coverage!" : "I'm outside coverage."} Can you confirm?`
+                  ? `Hi! I checked the coverage map. I'm ${distance}km from the nearest Evolve tower. ${inCoverage ? "I'm in coverage!" : "I'm outside coverage."} Can you confirm?`
                   : "Hi! I'd like to check if I'm in your coverage area."
               )}`}
               target="_blank"
@@ -289,7 +372,7 @@ export default function CoverageMapPage() {
                   {inCoverage ? "✅ You're within our coverage zone!" : "❌ You're outside our coverage zone"}
                 </div>
                 <div style={{ fontSize: "0.88rem", color: "var(--text3)" }}>
-                  Your pin is <strong>{distance} km</strong> from our Success tower.
+                  Your pin is <strong>{distance} km</strong> from the nearest Evolve tower.
                   {inCoverage
                     ? distance! <= 4
                       ? " You'll get an excellent signal."
@@ -305,7 +388,7 @@ export default function CoverageMapPage() {
                   </Link>
                 ) : (
                   <a
-                    href={`https://wa.me/5926092487?text=${encodeURIComponent(`Hi! I'm ${distance}km from your Success tower and outside coverage. Please notify me when you expand to my area.`)}`}
+                    href={`https://wa.me/5926092487?text=${encodeURIComponent(`Hi! I'm ${distance}km from the nearest Evolve tower and outside coverage. Please notify me when you expand to my area.`)}`}
                     target="_blank"
                     rel="noopener"
                     className="btn btn-outline"
