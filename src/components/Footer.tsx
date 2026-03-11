@@ -26,6 +26,12 @@ const SOLAR_LINKS = [
   { href: "/solar/quote", label: "Request a Quote" },
 ];
 
+const MICRO_STRATEGY_LINKS = [
+  { href: "/micro-strategy", label: "Overview" },
+  { href: "/micro-strategy/portfolio", label: "Portfolio" },
+  { href: "/micro-strategy/consultation", label: "Book Consultation" },
+];
+
 const SUPPORT = [
   { href: "/contact", label: "Report an Outage" },
   { href: "/contact", label: "Billing Help" },
@@ -99,6 +105,21 @@ export default function Footer() {
             </h5>
             <ul className="flex flex-col gap-3 list-none">
               {SOLAR_LINKS.map((s) => (
+                <li key={s.label}>
+                  <Link href={s.href} className="text-[0.88rem] transition-colors" style={{ color: "rgba(253, 248, 243, 0.55)" }}>
+                    {s.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div>
+            <h5 className="text-[0.8rem] font-bold uppercase tracking-[0.12em] mb-5" style={{ color: "#52C7B8" }}>
+              💡 Micro Strategy
+            </h5>
+            <ul className="flex flex-col gap-3 list-none">
+              {MICRO_STRATEGY_LINKS.map((s) => (
                 <li key={s.label}>
                   <Link href={s.href} className="text-[0.88rem] transition-colors" style={{ color: "rgba(253, 248, 243, 0.55)" }}>
                     {s.label}
