@@ -45,10 +45,10 @@ export default function Footer() {
   return (
     <footer style={{ background: "#2C1810", color: "#FDF8F3" }} className="pt-16 pb-8">
       <div className="container">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 pb-12" style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
-          <div>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8 lg:gap-6 pb-12" style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+          <div className="col-span-2 md:col-span-3 lg:col-span-2">
             <Link href="/">
-              <Logo className="h-[42px] w-auto" variant="dark" />
+              <Logo className="h-[44px] w-auto" variant="dark" />
             </Link>
             <p className="text-[0.88rem] leading-[1.75] mt-4 max-w-[280px]" style={{ color: "rgba(253, 248, 243, 0.6)" }}>
               Connecting Guyana, one community at a time. 📍 East Coast Demerara · Region 1 · 📱 +592 609-2487

@@ -9,7 +9,7 @@ export default function ContactPage() {
   return (
     <>
       <Navbar />
-      <main style={{ paddingTop: 72 }}>
+      <main style={{ paddingTop: 76 }}>
         <section className="section" style={{ background: "var(--navy)" }}>
           <div className="container">
             <div className="text-center max-w-2xl mx-auto mb-14">

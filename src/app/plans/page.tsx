@@ -87,7 +87,7 @@ const regions = [
 export default function PlansPage() {
   return (
     <>
-      <main style={{ paddingTop: 72 }}>
+      <main style={{ paddingTop: 76 }}>
         {/* Hero */}
         <section className="section text-center" style={{ background: "var(--soft-bg)" }}>
           <div className="container" style={{ maxWidth: 700 }}>

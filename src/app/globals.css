@@ -45,7 +45,7 @@
   --fs-body: clamp(0.9375rem, 0.9rem + 0.2vw, 1.0625rem);
   --container-max: 1200px;
   --gutter: clamp(16px, 4vw, 64px);
-  --nav-height: 72px;
+  --nav-height: 76px;
   --touch-min: 44px;
   --touch-comfortable: 48px;
   --r-sm: 12px;
@@ -123,18 +123,20 @@ img { display: block; max-width: 100%; }
 .btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
-  padding: 14px 28px;
+  padding: 14px 32px;
   border-radius: 9999px;
   font-family: 'Nunito', sans-serif;
-  font-weight: 600;
-  font-size: 0.9rem;
+  font-weight: 700;
+  font-size: 0.95rem;
   cursor: pointer;
   border: 2px solid transparent;
   transition: all 0.2s var(--spring);
   white-space: nowrap;
   position: relative;
   overflow: hidden;
+  letter-spacing: 0.01em;
 }
 
 .btn-primary {
