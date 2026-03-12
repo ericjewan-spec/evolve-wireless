@@ -5,11 +5,23 @@ export async function GET() {
   if (!key) return NextResponse.json({ error: "No RESEND_API_KEY" });
 
   try {
-    const res = await fetch("https://api.resend.com/domains", {
+    // First get domains list
+    const listRes = await fetch("https://api.resend.com/domains", {
       headers: { Authorization: `Bearer ${key}` },
     });
-    const data = await res.json();
-    return NextResponse.json(data);
+    const listData = await listRes.json();
+    
+    // Get detailed info for the first domain
+    if (listData.data && listData.data.length > 0) {
+      const domainId = listData.data[0].id;
+      const detailRes = await fetch(`https://api.resend.com/domains/${domainId}`, {
+        headers: { Authorization: `Bearer ${key}` },
+      });
+      const detailData = await detailRes.json();
+      return NextResponse.json(detailData);
+    }
+    
+    return NextResponse.json(listData);
   } catch (e) {
     return NextResponse.json({ error: String(e) });
   }
