@@ -13,6 +13,9 @@ const TOWERS = [
   { id: "mahaica-ecd", name: "Mahaica Tower", location: "Mahaica, ECD", lat: 6.6841, lng: -57.9218, radiusKm: 4, color: "#D4654A" },
   { id: "new-amsterdam", name: "New Amsterdam Tower", location: "New Amsterdam, Berbice", lat: 6.2426, lng: -57.5190, radiusKm: 4, color: "#2A9D8F" },
   { id: "port-kaituma", name: "Port Kaituma Tower", location: "Port Kaituma, Region 1", lat: 7.7298, lng: -59.8751, radiusKm: 4, color: "#E9B44C" },
+  { id: "mabaruma", name: "Mabaruma Tower", location: "Mabaruma, Region 1", lat: 8.2041, lng: -59.7776, radiusKm: 4, color: "#E9B44C" },
+  { id: "matthews-ridge", name: "Matthews Ridge Tower", location: "Matthews Ridge, Region 1", lat: 7.4914, lng: -60.1518, radiusKm: 4, color: "#E9B44C" },
+  { id: "baramita", name: "Baramita Tower", location: "Baramita, Region 1", lat: 7.3501, lng: -60.4880, radiusKm: 4, color: "#E9B44C" },
 ];
 
 export default function CoverageMapPage() {
@@ -216,7 +219,7 @@ export default function CoverageMapPage() {
               <span style={{ width: "10px", height: "10px", borderRadius: "50%", background: "#2A9D8F" }} /> New Amsterdam
             </span>
             <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-              <span style={{ width: "10px", height: "10px", borderRadius: "50%", background: "#E9B44C" }} /> Port Kaituma
+              <span style={{ width: "10px", height: "10px", borderRadius: "50%", background: "#E9B44C" }} /> Region 1 (Port Kaituma, Mabaruma, Matthews Ridge, Baramita)
             </span>
             <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
               <span style={{ width: "10px", height: "10px", borderRadius: "50%", background: "#D4654A", opacity: 0.3, border: "1px solid #D4654A" }} /> 4km Coverage Zone
