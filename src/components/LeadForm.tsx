@@ -16,13 +16,20 @@ export default function LeadForm() {
     if (!form.first_name.trim() || !form.last_name.trim()) { setErrorMsg("First and last name are required"); return; }
     setStatus("submitting");
     try {
-      const supabase = createClient();
       const utm = getUTMParams();
-      const { error } = await supabase.from("leads").insert({
-        first_name: form.first_name.trim(), last_name: form.last_name.trim(),
-        phone: form.phone, email: form.email.trim() || null, source: "website", utm_source: utm.utm_source,
+      const res = await fetch("/api/leads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          first_name: form.first_name.trim(),
+          last_name: form.last_name.trim(),
+          phone: form.phone,
+          email: form.email.trim() || null,
+          source: "website",
+          utm_source: utm.utm_source,
+        }),
       });
-      if (error) throw error;
+      if (!res.ok) throw new Error("Failed");
       setStatus("success");
     } catch { setStatus("error"); setErrorMsg("Could not submit right now. You can also WhatsApp us directly."); }
   }
