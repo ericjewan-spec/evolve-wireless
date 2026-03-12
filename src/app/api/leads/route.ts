@@ -153,11 +153,11 @@ async function sendSlackNotification(lead: {
    
    Option A — Resend (recommended, free tier: 100 emails/day):
      RESEND_API_KEY=re_xxxxxxxxxxxx
-     NOTIFICATION_EMAIL=ericjewan@gmail.com
+     NOTIFICATION_EMAIL=evolveenterprise592@gmail.com
    
    Option B — SendGrid:
      SENDGRID_API_KEY=SG.xxxxxxxxxxxx
-     NOTIFICATION_EMAIL=ericjewan@gmail.com
+     NOTIFICATION_EMAIL=evolveenterprise592@gmail.com
    
    Option C — Generic SMTP webhook (Zapier, Make, etc.):
      EMAIL_WEBHOOK_URL=https://hooks.zapier.com/xxxxx

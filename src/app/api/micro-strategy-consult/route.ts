@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import { sendEmail } from "@/lib/email";
 
-const ADMIN_EMAIL = process.env.NOTIFICATION_EMAIL || "ericjewan@gmail.com";
+const ADMIN_EMAIL = process.env.NOTIFICATION_EMAIL || "evolveenterprise592@gmail.com";
 const SLACK_WEBHOOK = process.env.SLACK_WEBHOOK_CONTACT || process.env.SLACK_WEBHOOK_GENERAL || process.env.SLACK_LEADS_WEBHOOK_URL || "";
 
 export async function POST(request: NextRequest) {

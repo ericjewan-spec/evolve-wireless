@@ -96,7 +96,7 @@ function wrap(content: string): string {
 
 /** Welcome email sent after signup — sends to customer + admin notification */
 export async function sendWelcomeEmail(to: string, name: string, planName: string) {
-  const ADMIN_EMAIL = "ericjewan@gmail.com";
+  const ADMIN_EMAIL = "evolveenterprise592@gmail.com";
   
   // Send welcome to customer (may fail if domain not verified in Resend)
   const customerResult = await sendEmail({
