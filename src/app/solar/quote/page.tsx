@@ -77,7 +77,7 @@ export default function QuotePage() {
                   <span style={{ width: "28px", height: "28px", borderRadius: "50%", background: "rgba(233, 180, 76, 0.12)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--gold)", fontSize: "0.8rem", fontWeight: 800 }}>1</span>
                   Your Details
                 </h3>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                <div className="form-grid-2">
                   <div>
                     <label style={{ display: "block", fontSize: "0.85rem", color: "var(--text2)", marginBottom: "6px", fontWeight: 600 }}>Full Name *</label>
                     <input value={form.name} onChange={(e) => update("name", e.target.value)} placeholder="Your full name" style={inputStyle} />
@@ -99,7 +99,7 @@ export default function QuotePage() {
                   <span style={{ width: "28px", height: "28px", borderRadius: "50%", background: "rgba(233, 180, 76, 0.12)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--gold)", fontSize: "0.8rem", fontWeight: 800 }}>2</span>
                   Property Details
                 </h3>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                <div className="form-grid-2">
                   <div>
                     <label style={{ display: "block", fontSize: "0.85rem", color: "var(--text2)", marginBottom: "6px", fontWeight: 600 }}>Property Type *</label>
                     <select value={form.property_type} onChange={(e) => update("property_type", e.target.value)} style={inputStyle}>
@@ -160,7 +160,7 @@ export default function QuotePage() {
                   <span style={{ width: "28px", height: "28px", borderRadius: "50%", background: "rgba(233, 180, 76, 0.12)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--gold)", fontSize: "0.8rem", fontWeight: 800 }}>3</span>
                   Preferences
                 </h3>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                <div className="form-grid-2">
                   <div>
                     <label style={{ display: "block", fontSize: "0.85rem", color: "var(--text2)", marginBottom: "6px", fontWeight: 600 }}>Do you have a generator?</label>
                     <select value={form.has_generator} onChange={(e) => update("has_generator", e.target.value)} style={inputStyle}>

@@ -112,7 +112,7 @@ export default function SolarPage() {
             </div>
 
             {/* Stats */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "24px", marginTop: "48px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px", marginTop: "48px" }}>
               {[
                 { val: "50MW+", label: "Installed Capacity" },
                 { val: "200+", label: "Systems Installed" },
@@ -137,13 +137,13 @@ export default function SolarPage() {
             <p className="section-sub" style={{ margin: "12px auto 0" }}>From small residential systems to large commercial installations — we design, install, and maintain solar energy solutions across all of Guyana.</p>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "24px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(280px, 100%), 1fr))", gap: "24px" }}>
             {services.map((s) => (
               <div key={s.title} className="card" style={{ background: "var(--card)", borderRadius: "var(--r-lg)", padding: "32px", border: "1px solid var(--divider)", transition: "var(--transition)" }}>
                 <span style={{ fontSize: "2rem", display: "block", marginBottom: "16px" }}>{s.icon}</span>
                 <h3 style={{ fontSize: "var(--fs-h3)", fontWeight: 700, marginBottom: "8px" }}>{s.title}</h3>
                 <p style={{ color: "var(--text3)", fontSize: "0.95rem", lineHeight: 1.7, marginBottom: "16px" }}>{s.desc}</p>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px", fontSize: "0.82rem" }}>
                   {s.features.map((f) => (
                     <div key={f} style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.82rem", color: "var(--text2)" }}>
                       <span style={{ color: "var(--teal)", fontSize: "0.9rem" }}>✓</span> {f}
@@ -163,7 +163,7 @@ export default function SolarPage() {
             <span className="section-label" style={{ color: "var(--terracotta)" }}>Benefits</span>
             <h2 className="section-title" style={{ margin: "12px auto 0" }}>Why Go Solar <span>in Guyana?</span></h2>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "20px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(260px, 100%), 1fr))", gap: "20px" }}>
             {[
               { icon: "☀️", title: "5+ Peak Sun Hours Daily", desc: "Guyana averages over 5 peak sun hours per day year-round — ideal for solar generation." },
               { icon: "💡", title: "Rising GPL Costs", desc: "Electricity prices keep climbing. Solar locks in your energy cost for 25+ years." },
@@ -190,7 +190,7 @@ export default function SolarPage() {
             <h2 className="section-title" style={{ margin: "12px auto 0" }}>How It <span>Works</span></h2>
             <p className="section-sub" style={{ margin: "12px auto 0" }}>From first contact to power-on, we make going solar simple and stress-free.</p>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "20px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(260px, 100%), 1fr))", gap: "20px" }}>
             {steps.map((s) => (
               <div key={s.n} style={{ padding: "28px", borderRadius: "var(--r-sm)", background: "var(--card)", border: "1px solid var(--divider)" }}>
                 <span style={{ fontFamily: "'Bricolage Grotesque', serif", fontSize: "2rem", fontWeight: 800, color: "rgba(233, 180, 76, 0.2)" }}>{s.n}</span>

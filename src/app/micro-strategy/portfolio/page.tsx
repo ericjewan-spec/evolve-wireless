@@ -70,7 +70,7 @@ export default function PortfolioPage() {
             ))}
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: "24px" }}>
+          <div className="grid-portfolio">
             {filtered.map((item) => (
               <button
                 key={item.id}

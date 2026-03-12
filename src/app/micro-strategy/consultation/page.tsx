@@ -69,7 +69,7 @@ export default function ConsultationPage() {
                   <span style={{ width: "28px", height: "28px", borderRadius: "50%", background: "rgba(42, 157, 143, 0.1)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--teal)", fontSize: "0.8rem", fontWeight: 800 }}>1</span>
                   Your Details
                 </h3>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                <div className="form-grid-2">
                   <div>
                     <label style={{ display: "block", fontSize: "0.85rem", color: "var(--text2)", marginBottom: "6px", fontWeight: 600 }}>Full Name *</label>
                     <input value={form.name} onChange={(e) => update("name", e.target.value)} placeholder="Your full name" style={inputStyle} />
@@ -95,7 +95,7 @@ export default function ConsultationPage() {
                   <span style={{ width: "28px", height: "28px", borderRadius: "50%", background: "rgba(42, 157, 143, 0.1)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--teal)", fontSize: "0.8rem", fontWeight: 800 }}>2</span>
                   Project Details
                 </h3>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                <div className="form-grid-2">
                   <div>
                     <label style={{ display: "block", fontSize: "0.85rem", color: "var(--text2)", marginBottom: "6px", fontWeight: 600 }}>Business Type</label>
                     <select value={form.business_type} onChange={(e) => update("business_type", e.target.value)} style={inputStyle}>

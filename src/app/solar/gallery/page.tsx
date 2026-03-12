@@ -69,7 +69,7 @@ export default function GalleryPage() {
           </div>
 
           {/* Gallery Grid */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "20px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(280px, 100%), 1fr))", gap: "20px" }}>
             {filtered.map((item) => (
               <button
                 key={item.id}

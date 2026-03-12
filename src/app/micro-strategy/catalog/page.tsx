@@ -96,13 +96,11 @@ export default function CatalogPage() {
                   overflow: "hidden",
                   cursor: "pointer",
                   transition: "var(--transition)",
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr",
-                  gap: "0",
                 }}
+                className="catalog-card"
               >
                 {/* Image */}
-                <div style={{ position: "relative", overflow: "hidden", borderRight: "1px solid var(--divider)" }}>
+                <div className="catalog-card-img-border" style={{ position: "relative", overflow: "hidden" }}>
                   <Image
                     src={item.image}
                     alt={item.title}

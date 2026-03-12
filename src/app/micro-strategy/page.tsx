@@ -131,7 +131,7 @@ export default function MicroStrategyPage() {
             </div>
 
             {/* Stats */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "24px", marginTop: "48px" }}>
+            <div className="grid-stats-3" style={{ marginTop: "48px" }}>
               {[
                 { val: "50+", label: "Projects Delivered" },
                 { val: "98%", label: "Client Satisfaction" },
@@ -156,7 +156,7 @@ export default function MicroStrategyPage() {
             <p className="section-sub" style={{ margin: "12px auto 0" }}>Whether you need a website, an AI chatbot, or automated workflows — we design and build solutions that actually work for your business.</p>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "24px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(280px, 100%), 1fr))", gap: "24px" }}>
             {services.map((s) => (
               <div key={s.title} className="card" style={{ background: "var(--card)", borderRadius: "var(--r-lg)", padding: "32px", border: "1px solid var(--divider)", transition: "var(--transition)" }}>
                 <span style={{ fontSize: "2rem", display: "block", marginBottom: "16px" }}>{s.icon}</span>
@@ -183,7 +183,7 @@ export default function MicroStrategyPage() {
             <h2 className="section-title" style={{ margin: "12px auto 0" }}>Real Impact for <span>Real Businesses</span></h2>
             <p className="section-sub" style={{ margin: "12px auto 0" }}>Here&apos;s what our technology solutions have done for Guyanese businesses like yours.</p>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "20px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(260px, 100%), 1fr))", gap: "20px" }}>
             {caseStudies.map((cs) => (
               <div key={cs.title} style={{ padding: "28px", borderRadius: "var(--r-lg)", background: "var(--card)", border: "1px solid var(--divider)" }}>
                 <span style={{ display: "inline-block", padding: "4px 12px", borderRadius: "100px", fontSize: "0.72rem", fontWeight: 600, background: "rgba(42, 157, 143, 0.1)", color: "var(--teal)", marginBottom: "12px" }}>
@@ -204,7 +204,7 @@ export default function MicroStrategyPage() {
             <span className="section-label" style={{ color: "var(--teal)" }}>Why Us</span>
             <h2 className="section-title" style={{ margin: "12px auto 0" }}>Why Guyanese Businesses Choose <span style={{ color: "var(--teal)" }}>Micro Strategy</span></h2>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "20px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(260px, 100%), 1fr))", gap: "20px" }}>
             {[
               { icon: "🇬🇾", title: "Built for Guyana", desc: "We understand Guyanese businesses, customers, and challenges. No cookie-cutter solutions — everything is tailored to our market." },
               { icon: "💬", title: "Plain Language", desc: "No tech jargon. We explain everything in simple terms and make sure you understand what you're getting." },
@@ -231,7 +231,7 @@ export default function MicroStrategyPage() {
             <h2 className="section-title" style={{ margin: "12px auto 0" }}>How We <span>Work</span></h2>
             <p className="section-sub" style={{ margin: "12px auto 0" }}>Simple, transparent, and stress-free — from first call to launch day.</p>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "20px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(260px, 100%), 1fr))", gap: "20px" }}>
             {steps.map((s) => (
               <div key={s.n} style={{ padding: "28px", borderRadius: "var(--r-sm)", background: "var(--card)", border: "1px solid var(--divider)" }}>
                 <span style={{ fontFamily: "'Bricolage Grotesque', serif", fontSize: "2rem", fontWeight: 800, color: "rgba(42, 157, 143, 0.2)" }}>{s.n}</span>

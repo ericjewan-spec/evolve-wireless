@@ -346,3 +346,121 @@ input, select, textarea {
   .reveal { opacity: 1; transform: none; }
   .hero-word { opacity: 1; transform: none; }
 }
+
+/* ── RESPONSIVE GRID UTILITIES ── */
+.grid-responsive-2 {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+@media (min-width: 640px) {
+  .grid-responsive-2 {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.grid-responsive-3 {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+}
+@media (min-width: 640px) {
+  .grid-responsive-3 {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+@media (min-width: 960px) {
+  .grid-responsive-3 {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+}
+
+.grid-responsive-4 {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+}
+@media (min-width: 640px) {
+  .grid-responsive-4 {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+@media (min-width: 960px) {
+  .grid-responsive-4 {
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  }
+}
+
+/* Catalog card: stack on mobile, side-by-side on desktop */
+.catalog-card {
+  display: grid;
+  grid-template-columns: 1fr;
+}
+@media (min-width: 768px) {
+  .catalog-card {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+.catalog-card-img-border {
+  border-bottom: 1px solid var(--divider);
+}
+@media (min-width: 768px) {
+  .catalog-card-img-border {
+    border-bottom: none;
+    border-right: 1px solid var(--divider);
+  }
+}
+
+/* Portfolio grid */
+.grid-portfolio {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+}
+@media (min-width: 640px) {
+  .grid-portfolio {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+@media (min-width: 1024px) {
+  .grid-portfolio {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+}
+
+/* Stats row */
+.grid-stats-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+@media (max-width: 480px) {
+  .grid-stats-3 {
+    gap: 12px;
+  }
+  .grid-stats-3 > div {
+    font-size: 0.9em;
+  }
+}
+
+/* Feature chips */
+.feature-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* Form 2-col that stacks on mobile */
+.form-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+@media (min-width: 640px) {
+  .form-grid-2 {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+.form-grid-2 .full-width {
+  grid-column: 1 / -1;
+}
