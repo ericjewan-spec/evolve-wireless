@@ -5,13 +5,12 @@
  * Setup: Add RESEND_API_KEY to Vercel env vars
  * Get your key at https://resend.com (free tier: 3,000 emails/month)
  * 
- * Optional: RESEND_FROM_EMAIL (default: onboarding@resend.dev for testing,
- * change to noreply@evolvewireless.gy once domain is verified)
+ * Optional: RESEND_FROM_EMAIL (default: noreply@evolvewireless.gy)
  */
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY || "";
-const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || "Evolve Wireless <onboarding@resend.dev>";
-const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || "support@evolvewireless.gy";
+const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || "Evolve Wireless <noreply@evolvewireless.gy>";
+const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || "evolveenterprise592@gmail.com";
 
 interface EmailOptions {
   to: string | string[];
