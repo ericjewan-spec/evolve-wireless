@@ -17,7 +17,7 @@ const TOWERS = [
   { id: "matthews-ridge", name: "Matthews Ridge Tower", location: "Matthews Ridge, Region 1", lat: 7.4914, lng: -60.1518, radiusKm: 4, color: "#E9B44C" },
   { id: "baramita", name: "Baramita Tower", location: "Baramita, Region 1", lat: 7.3501, lng: -60.4880, radiusKm: 4, color: "#E9B44C" },
   { id: "hosororo", name: "Hosororo Tower", location: "Hosororo, Region 1", lat: 8.1667, lng: -59.8000, radiusKm: 4, color: "#E9B44C" },
-  { id: "whitewater", name: "Whitewater Tower", location: "Whitewater, Region 1", lat: 7.6500, lng: -59.9200, radiusKm: 4, color: "#E9B44C" },
+  { id: "whitewater", name: "Whitewater Tower", location: "Whitewater, Region 1", lat: 8.1450, lng: -59.8200, radiusKm: 4, color: "#E9B44C" },
   { id: "charity", name: "Charity Tower", location: "Charity, Essequibo", lat: 7.4000, lng: -58.6000, radiusKm: 4, color: "#8B6F4E" },
 ];
 
