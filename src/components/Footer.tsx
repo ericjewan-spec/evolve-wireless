@@ -34,7 +34,6 @@ const MICRO_STRATEGY_LINKS = [
 ];
 
 const SUPPORT = [
-  { href: "/status", label: "Service Status" },
   { href: "/speed-test", label: "Speed Test" },
   { href: "/pay", label: "Pay Your Bill" },
   { href: "/contact", label: "Report an Outage" },
