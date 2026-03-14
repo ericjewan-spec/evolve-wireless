@@ -9,7 +9,7 @@ const TOWERS = [
   { id: "cummings-lodge-ecd", name: "Cummings Lodge Tower", location: "Cummings Lodge, ECD", lat: 6.8179, lng: -58.1114, radiusKm: 4, color: "#D4654A" },
   { id: "good-hope-ecd", name: "Good Hope Tower", location: "Good Hope, ECD", lat: 6.7990, lng: -58.0500, radiusKm: 4, color: "#D4654A" },
   { id: "nonpareil-ecd", name: "Non Pareil Tower", location: "Non Pareil, ECD", lat: 6.7720, lng: -58.0250, radiusKm: 3, color: "#D4654A" },
-  { id: "lancaster-ecd", name: "Lancaster Tower", location: "Lancaster, ECD", lat: 6.6500, lng: -57.8800, radiusKm: 3, color: "#D4654A" },
+  { id: "canegrove-ecd", name: "Cane Grove Tower", location: "Cane Grove, ECD", lat: 6.6242, lng: -57.9101, radiusKm: 4, color: "#D4654A" },
   { id: "mahaica-ecd", name: "Mahaica Tower", location: "Mahaica, ECD", lat: 6.6841, lng: -57.9218, radiusKm: 4, color: "#D4654A" },
   { id: "new-amsterdam", name: "New Amsterdam Tower", location: "New Amsterdam, Berbice", lat: 6.2426, lng: -57.5190, radiusKm: 4, color: "#2A9D8F" },
   { id: "port-kaituma", name: "Port Kaituma Tower", location: "Port Kaituma, Region 1", lat: 7.7298, lng: -59.8751, radiusKm: 4, color: "#E9B44C" },

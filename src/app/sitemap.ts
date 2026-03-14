@@ -16,6 +16,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     // Solar
     { url: `${base}/solar`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
     { url: `${base}/solar/gallery`, lastModified: now, changeFrequency: "monthly", priority: 0.6 },
+    { url: `${base}/solar/calculator`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
     { url: `${base}/solar/quote`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
     // Micro Strategy
     { url: `${base}/micro-strategy`, lastModified: now, changeFrequency: "weekly", priority: 0.7 },

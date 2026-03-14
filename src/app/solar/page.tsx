@@ -106,6 +106,9 @@ export default function SolarPage() {
               <Link href="/solar/quote" className="btn btn-primary" style={{ background: "var(--gold)", borderColor: "var(--gold)", boxShadow: "0 4px 20px rgba(233, 180, 76, 0.3)" }}>
                 Get Free Solar Quote
               </Link>
+              <Link href="/solar/calculator" className="btn btn-outline">
+                ⚡ Cost Calculator
+              </Link>
               <Link href="/solar/gallery" className="btn btn-outline">
                 View Our Projects
               </Link>
