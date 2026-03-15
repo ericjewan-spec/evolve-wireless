@@ -70,7 +70,7 @@ export default function ContactPage() {
 
                 {/* Email */}
                 <a
-                  href="mailto:info@evolvewireless.gy"
+                  href="mailto:evolveenterprise592@gmail.com"
                   className="flex items-center gap-5 rounded-2xl p-7 transition-all duration-300 hover:-translate-y-1"
                   style={{ background: "var(--card)", border: "1px solid var(--divider)" }}
                 >
@@ -82,7 +82,7 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <h3 className="font-['Syne'] font-bold text-base mb-0.5">Email</h3>
-                    <p className="text-sm text-[var(--cyan)]">info@evolvewireless.gy</p>
+                    <p className="text-sm text-[var(--cyan)]">evolveenterprise592@gmail.com</p>
                     <p className="text-xs text-[var(--text3)] mt-1">We respond within 24 hours</p>
                   </div>
                 </a>
