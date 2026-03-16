@@ -9,7 +9,7 @@
  */
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY || "";
-const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || "Evolve Wireless <onboarding@resend.dev>";
+const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || "Evolve Wireless <noreply@evolvewireless.gy>";
 const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || "evolveenterprise592@gmail.com";
 
 interface EmailOptions {
@@ -95,7 +95,7 @@ function wrap(content: string): string {
 
 /** Welcome email sent after signup — sends to customer + admin notification */
 export async function sendWelcomeEmail(to: string, name: string, planName: string) {
-  const ADMIN_EMAIL = "ericjewan@gmail.com"; // Must be Resend account owner email until domain is verified
+  const ADMIN_EMAIL = "evolveenterprise592@gmail.com"; // Must be Resend account owner email until domain is verified
   
   // Send welcome to customer (may fail if domain not verified in Resend)
   const customerResult = await sendEmail({
