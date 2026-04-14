@@ -152,7 +152,6 @@ export default function Footer() {
           </p>
           <div className="flex gap-4 flex-wrap">
             <span className="text-[0.7rem] px-2 py-0.5 rounded-full" style={{ border: "1px solid rgba(255,255,255,0.15)", color: "rgba(253, 248, 243, 0.5)" }}>GUYANESE OWNED</span>
-            <span className="text-[0.7rem] px-2 py-0.5 rounded-full" style={{ border: "1px solid rgba(255,255,255,0.15)", color: "rgba(253, 248, 243, 0.5)" }}>NO CONTRACTS</span>
             <span className="text-[0.7rem] px-2 py-0.5 rounded-full" style={{ border: "1px solid rgba(255,255,255,0.15)", color: "rgba(253, 248, 243, 0.5)" }}>LOCAL SUPPORT</span>
           </div>
         </div>

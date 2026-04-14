@@ -18,7 +18,7 @@ export default function HomePage() {
       {/* Trust bar */}
       <div className="text-center py-4" style={{ background: "rgba(42, 157, 143, 0.06)", borderTop: "1px solid rgba(44, 24, 16, 0.06)", borderBottom: "1px solid rgba(44, 24, 16, 0.06)" }}>
         <p style={{ fontSize: "0.85rem", color: "var(--text3)", fontWeight: 500, letterSpacing: "0.04em" }}>
-          No contracts required · Local Guyanese support team · Free router included
+          Local Guyanese support team · Free router included
         </p>
       </div>
 
@@ -297,7 +297,6 @@ export default function HomePage() {
           <div className="mt-10 space-y-0">
             {[
               { q: "What happens if my internet goes down in the middle of the night?", a: "You message us on WhatsApp — we monitor it around the clock. For known outages, we broadcast a status update before you wake up. For individual issues, a technician responds within one hour." },
-              { q: "Is there a contract? What if I want to cancel?", a: "No contracts. No cancellation fees. No fine print. You pay month to month, and if you need to pause or cancel, you contact us and it is done. We earn your business every single month, and we prefer it that way." },
               { q: "How fast is the installation, really?", a: "Our average is 48 hours from sign-up to live internet. For ECD customers, same-week installation is standard. For Port Kaituma, Mabaruma, Matthews Ridge and Baramita, we book within 7 days." },
               { q: "Do I need to buy my own equipment?", a: "No. Your plan includes a free router. Our technician installs everything — the outdoor antenna, cabling, and indoor router. You do not need to buy, source, or configure anything." },
               { q: "Can I upgrade or downgrade my plan?", a: "Yes, any time. Contact us via WhatsApp at +592 609-2487 and we adjust your plan from the next billing cycle. No fees, no penalties." },

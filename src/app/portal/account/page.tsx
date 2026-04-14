@@ -142,7 +142,7 @@ export default function AccountPage() {
         <div className="card p-6" style={{ background: "rgba(212,101,74,0.04)", borderColor: "rgba(212,101,74,0.15)" }}>
           <h3 className="font-bold mb-2" style={{ fontFamily: "'Bricolage Grotesque', serif" }}>Need to cancel or pause?</h3>
           <p className="text-sm" style={{ color: "var(--text3)" }}>
-            No contracts, no penalties. Contact us on WhatsApp at <a href="https://wa.me/5926092487" style={{ color: "var(--teal)" }}>+592 609-2487</a> and we&apos;ll handle it immediately.
+            Contact us on WhatsApp at <a href="https://wa.me/5926092487" style={{ color: "var(--teal)" }}>+592 609-2487</a> and we&apos;ll handle it immediately.
           </p>
         </div>
       </div>

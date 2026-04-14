@@ -268,7 +268,7 @@ function Step3({ form }: { form: Record<string, string | number> }) {
           <div style={{ fontSize: "0.88rem", color: "var(--terracotta)", fontWeight: 700 }}>GYD {(form.planPrice as number).toLocaleString()} / month</div>
         </div>
         <div style={{ padding: 16, borderRadius: 8, background: "rgba(42,157,143,0.06)", border: "1px solid rgba(42,157,143,0.15)", fontSize: "0.78rem", color: "var(--teal)" }}>
-          ✓ No contracts · ✓ Free router · ✓ Install in {form.region === "ecd" ? "48 hours" : "7 days"}
+          ✓ Free router · ✓ Install in {form.region === "ecd" ? "48 hours" : "7 days"}
         </div>
       </div>
     </div>

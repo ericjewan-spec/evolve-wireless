@@ -154,7 +154,7 @@ export default function PlansPage() {
                     )}
                     {!plan.speed && <div className="mb-4" />}
                     <ul className="text-left text-sm space-y-2 mb-6">
-                      {["Free router included", "Professional installation", "WhatsApp support", "No contract — cancel anytime"].map((f) => (
+                      {["Free router included", "Professional installation", "WhatsApp support", "24/7 WhatsApp support"].map((f) => (
                         <li key={f} style={{ color: "var(--text2)" }}>
                           <span style={{ color: "var(--teal)", fontWeight: 700, marginRight: 8 }}>✓</span>{f}
                         </li>
@@ -194,8 +194,7 @@ export default function PlansPage() {
         <section className="section" style={{ background: "var(--soft-bg)" }}>
           <div className="container" style={{ maxWidth: 600 }}>
             <h2 className="text-xl font-bold mb-6 text-center" style={{ fontFamily: "'Bricolage Grotesque', serif" }}>Common Questions</h2>
-            {[
-              { q: "Is there a contract?", a: "No. Pay month to month. Cancel any time, no penalties." },
+            {[,
               { q: "What's included?", a: "Free router, professional installation, and local support — all included." },
               { q: "How fast is installation?", a: "ECD & New Amsterdam: within 48 hours. Region 1: within 7 days." },
               { q: "Can I upgrade my plan?", a: "Yes — WhatsApp us at +592 609-2487 and we change it from the next billing cycle." },
