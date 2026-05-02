@@ -27,7 +27,7 @@ export default function HomePage() {
         <div className="container">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {[
-              { href: "/coverage", icon: "📍", label: "Check Coverage", desc: "See if we're in your area", color: "var(--terracotta)" },
+              { href: "/coverage/map", icon: "📍", label: "Check Coverage", desc: "See if we're in your area", color: "var(--terracotta)" },
               { href: "/plans", icon: "📋", label: "View Plans", desc: "From GYD 5,000/mo", color: "var(--teal)" },
               { href: "/signup", icon: "🚀", label: "Sign Up", desc: "Get online in 48 hours", color: "var(--terracotta)" },
               { href: "/login", icon: "👤", label: "My Account", desc: "Pay bills & get support", color: "var(--teal)" },
@@ -51,7 +51,7 @@ export default function HomePage() {
                 icon: "🔒",
                 title: "Your Connection Never Drops. We Guarantee It.",
                 body: "Your children's education, your business calls, your family WhatsApp — they all depend on a connection that never lets you down. We engineer our network for Guyana's real conditions, not textbook scenarios.",
-                link: { label: "Check your coverage →", href: "/coverage" },
+                link: { label: "Check your coverage →", href: "/coverage/map" },
               },
               {
                 icon: "⚡",
@@ -88,7 +88,7 @@ export default function HomePage() {
               <p className="text-sm" style={{ color: "var(--text3)" }}>Enter your address and find out instantly — it takes 10 seconds.</p>
             </div>
             <div className="flex gap-3 flex-wrap">
-              <Link href="/coverage" className="btn btn-primary">Check My Coverage →</Link>
+              <Link href="/coverage/map" className="btn btn-primary">Check My Coverage →</Link>
               <Link href="/plans" className="btn btn-ghost">View All Plans</Link>
             </div>
           </div>
@@ -332,7 +332,7 @@ export default function HomePage() {
           </h2>
           <p className="text-base mb-7" style={{ color: "var(--text3)" }}>Check your coverage, pick a plan, or chat with us on WhatsApp.</p>
           <div className="flex gap-3 justify-center flex-wrap">
-            <Link href="/coverage" className="btn btn-primary">Check My Coverage →</Link>
+            <Link href="/coverage/map" className="btn btn-primary">Check My Coverage →</Link>
             <Link href="/signup" className="btn btn-outline">Sign Up Now</Link>
             <a href="https://wa.me/5926092487" className="btn btn-cyan" target="_blank" rel="noopener">💬 WhatsApp Us</a>
           </div>

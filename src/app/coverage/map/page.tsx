@@ -263,9 +263,12 @@ export default function CoverageMapPage() {
                   }
                 </div>
               </div>
-              <div style={{ display: "flex", gap: "8px" }}>
+              <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
                 {inCoverage ? (
-                  <Link href="/signup" className="btn btn-primary" style={{ fontSize: "0.85rem", padding: "10px 20px" }}>Sign Up Now →</Link>
+                  <>
+                    <Link href="/signup" className="btn btn-primary" style={{ fontSize: "0.95rem", padding: "14px 28px", boxShadow: "0 4px 20px rgba(212,101,74,0.3)" }}>🚀 Sign Up Now →</Link>
+                    <Link href="/plans" className="btn btn-outline" style={{ fontSize: "0.88rem", padding: "12px 22px" }}>View Plans</Link>
+                  </>
                 ) : (
                   <a href={`https://wa.me/5926092487?text=${encodeURIComponent(`Hi! I'm ${distance}km from ${nearestName} and outside coverage. Please notify me when you expand to my area.`)}`} target="_blank" rel="noopener" className="btn btn-outline" style={{ fontSize: "0.85rem", padding: "10px 20px" }}>
                     💬 Join Waitlist
