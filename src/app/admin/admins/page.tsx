@@ -86,6 +86,18 @@ export default function AdminsPage() {
     fetchAdmins();
   }
 
+  async function sendPasswordReset(a: Admin) {
+    if (!confirm(`Send a password reset email to ${a.full_name} at ${a.email}?\n\nThe link will expire in 1 hour.`)) return;
+    const { error: e } = await supabase.auth.resetPasswordForEmail(a.email, {
+      redirectTo: `${window.location.origin}/admin/reset-password`,
+    });
+    if (e) {
+      alert(`Could not send reset email: ${e.message}`);
+      return;
+    }
+    alert(`Reset link sent to ${a.email}.`);
+  }
+
   if (adminLoading || loading) {
     return <div style={{ paddingTop: 80, textAlign: "center", color: "#8B7355" }}>Loading…</div>;
   }
@@ -97,7 +109,7 @@ export default function AdminsPage() {
     <div style={{ maxWidth: 1000, margin: "0 auto", padding: "32px 24px 80px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 28, flexWrap: "wrap", gap: 16 }}>
         <div>
-          <h1 style={{ fontSize: 28, fontWeight: 800, margin: 0, letterSpacing: "-0.01em" }}>Admin users</h1>
+          <h1 style={{ fontSize: 28, fontWeight: 800, margin: 0, letterSpacing: "-0.01em", color: "#F5F0EB" }}>Admin users</h1>
           <p style={{ color: "#8B7355", margin: "4px 0 0 0", fontSize: 14 }}>
             Manage who can sign in to the admin area. Owner only.
           </p>
@@ -190,6 +202,9 @@ export default function AdminsPage() {
                 color: a.active ? "#4CAF50" : "#8B7355",
               }}>{a.active ? "ACTIVE" : "DEACTIVATED"}</span>
               <span style={{ fontSize: 12, color: "#8B7355" }}>last login: {fmt(a.last_login_at)}</span>
+              <button onClick={() => sendPasswordReset(a)} style={btnSecondary()} title={`Send password reset email to ${a.email}`}>
+                Send reset email
+              </button>
               {a.id !== admin?.id && (
                 <button onClick={() => toggleActive(a)} style={btnSecondary()}>
                   {a.active ? "Deactivate" : "Reactivate"}

@@ -49,7 +49,12 @@ export async function middleware(request: NextRequest) {
   }
 
   // ============ ADMIN AREA ============
-  if (pathname.startsWith("/admin") && pathname !== "/admin/login") {
+  // Public admin pages: /admin/login (sign in), /admin/reset-password (post-email recovery flow).
+  // These are reachable without an active admin session.
+  const isPublicAdminPath =
+    pathname === "/admin/login" || pathname === "/admin/reset-password";
+
+  if (pathname.startsWith("/admin") && !isPublicAdminPath) {
     if (!user) {
       const next = request.nextUrl.clone();
       next.pathname = "/admin/login";

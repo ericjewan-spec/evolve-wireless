@@ -110,7 +110,7 @@ export default function PayrollDashboard() {
       <div style={{ padding: "24px 24px 0", maxWidth: 1100, margin: "0 auto" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "24px", flexWrap: "wrap", gap: "12px" }}>
           <div>
-            <h1 style={{ fontFamily: "'Bricolage Grotesque', serif", fontSize: "1.6rem", fontWeight: 800, marginBottom: "4px" }}>
+            <h1 style={{ fontFamily: "'Bricolage Grotesque', serif", fontSize: "1.6rem", fontWeight: 800, marginBottom: "4px", color: "#F5F0EB" }}>
               💼 Payroll & Attendance
             </h1>
             <p style={{ fontSize: "0.82rem", color: "#7A7068" }}>Evolve Wireless — Staff Management</p>
@@ -134,7 +134,7 @@ export default function PayrollDashboard() {
         {tab === "employees" && (
           <>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-              <h2 style={{ fontFamily: "'Bricolage Grotesque', serif", fontWeight: 700 }}>Staff Directory</h2>
+              <h2 style={{ fontFamily: "'Bricolage Grotesque', serif", fontWeight: 700, color: "#F5F0EB" }}>Staff Directory</h2>
               <button onClick={() => setShowAddEmployee(!showAddEmployee)} style={{ ...s(true), fontSize: "0.85rem" }}>+ Add Employee</button>
             </div>
 
@@ -200,7 +200,7 @@ export default function PayrollDashboard() {
         {tab === "attendance" && (
           <>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", flexWrap: "wrap", gap: "12px" }}>
-              <h2 style={{ fontFamily: "'Bricolage Grotesque', serif", fontWeight: 700 }}>Attendance Records</h2>
+              <h2 style={{ fontFamily: "'Bricolage Grotesque', serif", fontWeight: 700, color: "#F5F0EB" }}>Attendance Records</h2>
               <button onClick={() => setShowAddAttendance(!showAddAttendance)} style={{ ...s(true), fontSize: "0.85rem" }}>+ Log Attendance</button>
             </div>
 
@@ -272,7 +272,7 @@ export default function PayrollDashboard() {
         {/* ===== PAYROLL TAB ===== */}
         {tab === "payroll" && (
           <>
-            <h2 style={{ fontFamily: "'Bricolage Grotesque', serif", fontWeight: 700, marginBottom: "16px" }}>Payroll Calculator</h2>
+            <h2 style={{ fontFamily: "'Bricolage Grotesque', serif", fontWeight: 700, color: "#F5F0EB", marginBottom: "16px" }}>Payroll Calculator</h2>
 
             <div style={{ display: "flex", gap: "12px", marginBottom: "20px", alignItems: "end", flexWrap: "wrap" }}>
               <div><label style={label}>Period Start</label><input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} style={{ ...input, width: "auto" }} /></div>

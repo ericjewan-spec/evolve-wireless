@@ -254,7 +254,7 @@ export default function EmployeeDetailPage() {
             {employee.first_name[0]}{employee.last_name[0]}
           </div>
           <div>
-            <h1 style={{ fontSize: 28, fontWeight: 800, margin: 0, letterSpacing: "-0.01em" }}>
+            <h1 style={{ fontSize: 28, fontWeight: 800, margin: 0, letterSpacing: "-0.01em", color: "#F5F0EB" }}>
               {employee.first_name} {employee.last_name}
             </h1>
             <p style={{ color: "#8B7355", margin: "4px 0 0 0", fontSize: 14 }}>
