@@ -15,6 +15,10 @@ export type CurrentAdmin = {
   created_at: string;
 };
 
+/**
+ * Hook that returns the currently signed-in admin (or null while loading / not signed in).
+ * Use this in any client component under /admin to know who is acting.
+ */
 export function useCurrentAdmin() {
   const [admin, setAdmin] = useState<CurrentAdmin | null>(null);
   const [loading, setLoading] = useState(true);

@@ -19,11 +19,19 @@ type AuditEntry = {
   metadata?: Record<string, unknown> | null;
 };
 
+/**
+ * Write a single audit log entry. Called from the browser; the audit table's
+ * INSERT policy requires authenticated admin so this is safe.
+ *
+ * We also stamp admin_email + admin_name into the row (denormalised) so the
+ * audit trail remains readable even if the admin is later deleted.
+ */
 export async function logAudit(entry: AuditEntry) {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return;
 
+  // Fetch admin name/email for denormalised stamping
   const { data: adminRow } = await supabase
     .from("admins")
     .select("email, full_name")
@@ -43,6 +51,10 @@ export async function logAudit(entry: AuditEntry) {
   });
 }
 
+/**
+ * Compare two objects and write one audit entry per changed field.
+ * Skips fields whose value is unchanged or both null/undefined/empty.
+ */
 export async function logFieldChanges<T extends Record<string, unknown>>(
   employeeId: string,
   before: T,

@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase-browser";
+import { logAudit } from "@/lib/audit";
 
 type Tab = "employees" | "attendance" | "payroll";
 type Employee = { id: string; first_name: string; last_name: string; role: string; department: string; pay_type: string; pay_rate: number; pay_cycle: string; status: string; phone: string; email: string; pin_code: string; leave_balance_vacation: number; leave_balance_sick: number; start_date: string; };
@@ -43,7 +45,20 @@ export default function PayrollDashboard() {
   async function addEmployee() {
     if (!newEmp.first_name || !newEmp.last_name || !newEmp.pay_rate) return;
     const pin = newEmp.pin_code || String(Math.floor(1000 + Math.random() * 9000));
-    await supabase.from("employees").insert({ ...newEmp, pay_rate: parseFloat(newEmp.pay_rate), pin_code: pin, start_date: today() });
+    const { data: created } = await supabase.from("employees").insert({ ...newEmp, pay_rate: parseFloat(newEmp.pay_rate), pin_code: pin, start_date: today() }).select().single();
+    if (created) {
+      await logAudit({
+        employee_id: created.id,
+        action: "created",
+        metadata: {
+          name: `${created.first_name} ${created.last_name}`,
+          role: created.role,
+          pay_rate: created.pay_rate,
+          pay_type: created.pay_type,
+          pay_cycle: created.pay_cycle,
+        },
+      });
+    }
     setNewEmp({ first_name: "", last_name: "", phone: "", email: "", role: "Technician", department: "Operations", pay_type: "hourly", pay_rate: "", pay_cycle: "fortnightly", pin_code: "" });
     setShowAddEmployee(false);
     fetchEmployees();
@@ -90,7 +105,7 @@ export default function PayrollDashboard() {
   if (loading) return <div style={{ paddingTop: 100, textAlign: "center", color: "#8B7355" }}>Loading payroll system...</div>;
 
   return (
-    <div style={{ minHeight: "100vh", background: "#0C0A09", color: "#F5F0EB", fontFamily: "'Nunito', sans-serif" }}>
+    <div>
       {/* Header */}
       <div style={{ padding: "24px 24px 0", maxWidth: 1100, margin: "0 auto" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "24px", flexWrap: "wrap", gap: "12px" }}>
@@ -158,18 +173,23 @@ export default function PayrollDashboard() {
 
             <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
               {employees.map(emp => (
-                <div key={emp.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px", borderRadius: "12px", background: "#141210", border: "1px solid #1e1a17", flexWrap: "wrap", gap: "12px" }}>
-                  <div>
-                    <div style={{ fontWeight: 700, fontSize: "0.95rem" }}>{emp.first_name} {emp.last_name}</div>
-                    <div style={{ fontSize: "0.78rem", color: "#7A7068" }}>{emp.role} · {emp.department} · PIN: {emp.pin_code}</div>
-                  </div>
-                  <div style={{ textAlign: "right" }}>
-                    <div style={{ fontWeight: 700, color: "#E9B44C", fontSize: "0.92rem" }}>
-                      GYD {fmt(emp.pay_rate)}{emp.pay_type === "hourly" ? "/hr" : `/${emp.pay_cycle === "fortnightly" ? "fortnight" : "month"}`}
+                <Link key={emp.id} href={`/admin/payroll/employees/${emp.id}`} style={{ textDecoration: "none", color: "inherit" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px", borderRadius: "12px", background: "#141210", border: "1px solid #1e1a17", flexWrap: "wrap", gap: "12px", cursor: "pointer", transition: "all 0.15s" }}
+                    onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.borderColor = "#3a3026"; (e.currentTarget as HTMLDivElement).style.background = "#161310"; }}
+                    onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.borderColor = "#1e1a17"; (e.currentTarget as HTMLDivElement).style.background = "#141210"; }}
+                  >
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: "0.95rem" }}>{emp.first_name} {emp.last_name}</div>
+                      <div style={{ fontSize: "0.78rem", color: "#7A7068" }}>{emp.role} · {emp.department} · PIN: {emp.pin_code}</div>
                     </div>
-                    <div style={{ fontSize: "0.75rem", color: "#7A7068" }}>{emp.pay_cycle} · 🏖️ {emp.leave_balance_vacation}d · 🤒 {emp.leave_balance_sick}d</div>
+                    <div style={{ textAlign: "right" }}>
+                      <div style={{ fontWeight: 700, color: "#E9B44C", fontSize: "0.92rem" }}>
+                        GYD {fmt(emp.pay_rate)}{emp.pay_type === "hourly" ? "/hr" : `/${emp.pay_cycle === "fortnightly" ? "fortnight" : "month"}`}
+                      </div>
+                      <div style={{ fontSize: "0.75rem", color: "#7A7068" }}>{emp.pay_cycle} · 🏖️ {emp.leave_balance_vacation}d · 🤒 {emp.leave_balance_sick}d</div>
+                    </div>
                   </div>
-                </div>
+                </Link>
               ))}
               {employees.length === 0 && <p style={{ color: "#7A7068", textAlign: "center", padding: "40px" }}>No employees added yet. Click &quot;+ Add Employee&quot; to start.</p>}
             </div>
