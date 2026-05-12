@@ -6,7 +6,7 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: "*",
         allow: "/",
-        disallow: ["/api/", "/portal/", "/login"],
+        disallow: ["/api/", "/portal/", "/login", "/admin/", "/clock"],
       },
     ],
     sitemap: "https://evolvewireless.gy/sitemap.xml",

@@ -194,7 +194,7 @@ export default function PlansPage() {
         <section className="section" style={{ background: "var(--soft-bg)" }}>
           <div className="container" style={{ maxWidth: 600 }}>
             <h2 className="text-xl font-bold mb-6 text-center" style={{ fontFamily: "'Bricolage Grotesque', serif" }}>Common Questions</h2>
-            {[,
+            {[
               { q: "What's included?", a: "Free router, professional installation, and local support — all included." },
               { q: "How fast is installation?", a: "ECD & New Amsterdam: within 48 hours. Region 1: within 7 days." },
               { q: "Can I upgrade my plan?", a: "Yes — WhatsApp us at +592 609-2487 and we change it from the next billing cycle." },
