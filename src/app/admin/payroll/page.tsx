@@ -7,7 +7,7 @@ import { logAudit } from "@/lib/audit";
 
 type Tab = "employees" | "attendance" | "payroll";
 type Employee = { id: string; first_name: string; last_name: string; role: string; department: string; pay_type: string; pay_rate: number; pay_cycle: string; status: string; phone: string; email: string; pin_code: string; leave_balance_vacation: number; leave_balance_sick: number; start_date: string; };
-type Attendance = { id: string; employee_id: string; date: string; clock_in: string; clock_out: string; hours_worked: number; status: string; notes: string; source: string; employees?: { first_name: string; last_name: string } };
+type Attendance = { id: string; employee_id: string; date: string; clock_in: string; clock_out: string; hours_worked: number; status: string; notes: string; source: string; is_late_arrival?: boolean; minutes_late?: number; scheduled_start?: string | null; employees?: { first_name: string; last_name: string } };
 
 const supabase = createClient();
 const fmt = (n: number) => n.toLocaleString("en-GY");
@@ -36,8 +36,21 @@ export default function PayrollDashboard() {
   }, []);
 
   const fetchAttendance = useCallback(async () => {
-    const { data } = await supabase.from("attendance").select("*, employees(first_name, last_name)").gte("date", dateFrom).lte("date", dateTo).order("date", { ascending: false });
-    if (data) setAttendance(data as Attendance[]);
+    // Fetch attendance with schedule-derived lateness flags.
+    // The view doesn't expose foreign keys for PostgREST joins, so we fetch employees separately
+    // and stitch them in by employee_id.
+    const [attRes, empRes] = await Promise.all([
+      supabase.from("attendance_with_schedule").select("*").gte("date", dateFrom).lte("date", dateTo).order("date", { ascending: false }),
+      supabase.from("employees").select("id, first_name, last_name"),
+    ]);
+    if (attRes.data) {
+      const empMap = new Map((empRes.data || []).map((e: { id: string; first_name: string; last_name: string }) => [e.id, e]));
+      const enriched = attRes.data.map((a: Attendance) => ({
+        ...a,
+        employees: empMap.get(a.employee_id) ? { first_name: empMap.get(a.employee_id)!.first_name, last_name: empMap.get(a.employee_id)!.last_name } : undefined,
+      }));
+      setAttendance(enriched as Attendance[]);
+    }
   }, [dateFrom, dateTo]);
 
   useEffect(() => { setLoading(true); Promise.all([fetchEmployees(), fetchAttendance()]).then(() => setLoading(false)); }, [fetchEmployees, fetchAttendance]);
@@ -251,7 +264,23 @@ export default function PayrollDashboard() {
                     <tr key={a.id} style={{ borderBottom: "1px solid #1e1a17" }}>
                       <td style={{ padding: "10px 12px" }}>{a.date}</td>
                       <td style={{ padding: "10px 12px", fontWeight: 600 }}>{a.employees?.first_name} {a.employees?.last_name}</td>
-                      <td style={{ padding: "10px 12px", color: "#8B7355" }}>{a.clock_in ? new Date(a.clock_in).toLocaleTimeString("en-GY", { hour: "2-digit", minute: "2-digit" }) : "—"}</td>
+                      <td style={{ padding: "10px 12px", color: "#8B7355" }}>
+                        {a.clock_in ? new Date(a.clock_in).toLocaleTimeString("en-GY", { hour: "2-digit", minute: "2-digit" }) : "—"}
+                        {a.is_late_arrival && (
+                          <span style={{
+                            marginLeft: 8,
+                            padding: "2px 7px",
+                            borderRadius: 100,
+                            fontSize: 9,
+                            fontWeight: 700,
+                            letterSpacing: "0.06em",
+                            background: "rgba(255,107,94,0.12)",
+                            color: "#ff8a7a",
+                          }} title={a.scheduled_start ? `Scheduled ${String(a.scheduled_start).slice(0,5)} · ${a.minutes_late} min late` : `${a.minutes_late} min late`}>
+                            LATE {a.minutes_late ? `+${a.minutes_late}M` : ""}
+                          </span>
+                        )}
+                      </td>
                       <td style={{ padding: "10px 12px", color: "#8B7355" }}>{a.clock_out ? new Date(a.clock_out).toLocaleTimeString("en-GY", { hour: "2-digit", minute: "2-digit" }) : "—"}</td>
                       <td style={{ padding: "10px 12px", fontWeight: 700, color: "#E9B44C" }}>{a.hours_worked ?? "—"}</td>
                       <td style={{ padding: "10px 12px" }}>

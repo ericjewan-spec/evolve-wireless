@@ -118,7 +118,7 @@ const fmtBytes = (n: number | null) => {
   return `${(n / 1024 / 1024).toFixed(1)} MB`;
 };
 
-type Tab = "profile" | "documents" | "history" | "portal";
+type Tab = "profile" | "documents" | "history" | "portal" | "schedule";
 
 export default function EmployeeDetailPage() {
   const params = useParams();
@@ -300,8 +300,8 @@ export default function EmployeeDetailPage() {
       </div>
 
       {/* Tabs */}
-      <div style={{ display: "flex", gap: 4, borderBottom: "1px solid #1e1a17", marginBottom: 24 }}>
-        {(["profile", "documents", "history", "portal"] as Tab[]).map((t) => (
+      <div style={{ display: "flex", gap: 4, borderBottom: "1px solid #1e1a17", marginBottom: 24, flexWrap: "wrap" }}>
+        {(["profile", "documents", "history", "portal", "schedule"] as Tab[]).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -321,6 +321,7 @@ export default function EmployeeDetailPage() {
             {t === "profile" ? "Profile"
               : t === "documents" ? `Documents (${docs.length})`
               : t === "history" ? `History (${audit.length})`
+              : t === "schedule" ? "Schedule"
               : `Portal & Leave${leaves.filter(l => l.status === "pending").length ? ` (${leaves.filter(l => l.status === "pending").length})` : ""}`}
           </button>
         ))}
@@ -368,6 +369,8 @@ export default function EmployeeDetailPage() {
           onChange={fetchAll}
         />
       )}
+
+      {tab === "schedule" && <SchedulePanel employeeId={employee.id} firstName={employee.first_name} />}
     </div>
   );
 }
@@ -1223,6 +1226,203 @@ function PortalPanel({ employee, leaves, onChange }: {
             ))}
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+/* ============================================================
+   SCHEDULE PANEL — weekly shift template
+============================================================ */
+type Schedule = {
+  id: string;
+  employee_id: string;
+  day_of_week: number;
+  start_time: string | null;
+  end_time: string | null;
+  is_working_day: boolean;
+  notes: string | null;
+};
+
+const DOW_LABELS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+function SchedulePanel({ employeeId, firstName }: { employeeId: string; firstName: string }) {
+  const supabase = createClient();
+  const [rows, setRows] = useState<Schedule[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [info, setInfo] = useState("");
+
+  const fetchSchedule = useCallback(async () => {
+    setLoading(true);
+    const { data } = await supabase
+      .from("shift_schedules")
+      .select("*")
+      .eq("employee_id", employeeId)
+      .order("day_of_week", { ascending: true });
+    setRows((data as Schedule[]) || []);
+    setLoading(false);
+  }, [supabase, employeeId]);
+
+  useEffect(() => { fetchSchedule(); }, [fetchSchedule]);
+
+  // Build a 7-row local view, filling gaps with default off rows
+  const byDow: Record<number, Schedule | null> = { 0: null, 1: null, 2: null, 3: null, 4: null, 5: null, 6: null };
+  for (const r of rows) byDow[r.day_of_week] = r;
+
+  function update(dow: number, patch: Partial<Schedule>) {
+    setRows(prev => {
+      const found = prev.find(r => r.day_of_week === dow);
+      if (found) return prev.map(r => r.day_of_week === dow ? { ...r, ...patch } : r);
+      return [...prev, {
+        id: `new-${dow}`,
+        employee_id: employeeId,
+        day_of_week: dow,
+        start_time: null,
+        end_time: null,
+        is_working_day: true,
+        notes: null,
+        ...patch,
+      }];
+    });
+  }
+
+  async function applyMonFri9to5() {
+    setRows(prev => {
+      const map = new Map(prev.map(r => [r.day_of_week, r]));
+      for (let d = 1; d <= 5; d++) {
+        map.set(d, {
+          ...(map.get(d) || { id: `new-${d}`, employee_id: employeeId, day_of_week: d, notes: null }),
+          day_of_week: d,
+          is_working_day: true,
+          start_time: "09:00",
+          end_time: "17:00",
+        } as Schedule);
+      }
+      for (const d of [0, 6]) {
+        map.set(d, {
+          ...(map.get(d) || { id: `new-${d}`, employee_id: employeeId, day_of_week: d, notes: null }),
+          day_of_week: d,
+          is_working_day: false,
+          start_time: null,
+          end_time: null,
+        } as Schedule);
+      }
+      return Array.from(map.values()).sort((a, b) => a.day_of_week - b.day_of_week);
+    });
+  }
+
+  async function save() {
+    setError(""); setInfo(""); setSaving(true);
+    // Upsert all 7 days
+    const payload = Object.entries(byDow).map(([dowStr, row]) => {
+      const dow = Number(dowStr);
+      const r = row || { day_of_week: dow, is_working_day: false, start_time: null, end_time: null, notes: null };
+      return {
+        employee_id: employeeId,
+        day_of_week: dow,
+        is_working_day: r.is_working_day,
+        start_time: r.is_working_day ? r.start_time : null,
+        end_time: r.is_working_day ? r.end_time : null,
+        notes: r.notes,
+      };
+    });
+    // Validate
+    for (const p of payload) {
+      if (p.is_working_day && (!p.start_time || !p.end_time)) {
+        setError(`Day ${DOW_LABELS[p.day_of_week]} is marked working but missing start/end time.`);
+        setSaving(false);
+        return;
+      }
+    }
+    const { error: e } = await supabase
+      .from("shift_schedules")
+      .upsert(payload, { onConflict: "employee_id,day_of_week" });
+    setSaving(false);
+    if (e) { setError(e.message); return; }
+    setInfo("Schedule saved.");
+    await fetchSchedule();
+  }
+
+  if (loading) return <div style={{ color: "#8B7355", padding: 20 }}>Loading…</div>;
+
+  return (
+    <div style={{ background: "#141210", border: "1px solid #1e1a17", borderRadius: 12, padding: 24 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12, marginBottom: 18 }}>
+        <div>
+          <h3 style={{ margin: 0, fontSize: 16, color: "#F5F0EB" }}>Weekly shift template</h3>
+          <p style={{ color: "#8B7355", fontSize: 12, margin: "4px 0 0 0" }}>
+            {firstName}&apos;s scheduled work week. Late arrivals are flagged against these times (5-min grace).
+          </p>
+        </div>
+        <button onClick={applyMonFri9to5} style={{
+          padding: "6px 12px", background: "transparent", color: "#D4654A",
+          border: "1px solid #2a2420", borderRadius: 6, fontSize: 12,
+          fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
+        }}>Apply Mon–Fri 9–5</button>
+      </div>
+
+      {error && <div style={{ padding: 10, background: "rgba(255,107,94,0.08)", color: "#ff8a7a", borderRadius: 6, marginBottom: 12, fontSize: 13 }}>{error}</div>}
+      {info && <div style={{ padding: 10, background: "rgba(76,175,80,0.08)", color: "#4CAF50", borderRadius: 6, marginBottom: 12, fontSize: 13 }}>{info}</div>}
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {[1, 2, 3, 4, 5, 6, 0].map(dow => {
+          const r = byDow[dow];
+          const working = r?.is_working_day ?? false;
+          return (
+            <div key={dow} style={{
+              display: "grid",
+              gridTemplateColumns: "110px auto 1fr 1fr",
+              alignItems: "center",
+              gap: 14,
+              padding: "12px 14px",
+              background: working ? "#100E0C" : "rgba(16,14,12,0.5)",
+              border: "1px solid #1e1a17",
+              borderRadius: 8,
+            }}>
+              <div style={{ fontWeight: 700, fontSize: 14, color: "#F5F0EB" }}>{DOW_LABELS[dow]}</div>
+              <label style={{ display: "flex", alignItems: "center", gap: 8, color: working ? "#F5F0EB" : "#8B7355", fontSize: 12 }}>
+                <input
+                  type="checkbox"
+                  checked={working}
+                  onChange={(e) => update(dow, { is_working_day: e.target.checked })}
+                />
+                {working ? "Working" : "Off"}
+              </label>
+              <input
+                type="time"
+                value={r?.start_time?.slice(0, 5) ?? ""}
+                disabled={!working}
+                onChange={(e) => update(dow, { start_time: e.target.value || null })}
+                style={{
+                  padding: "8px 10px", borderRadius: 6, border: "1px solid #2a2420",
+                  background: "#0C0A09", color: working ? "#F5F0EB" : "#5a504a", fontSize: 13,
+                  fontFamily: "inherit", outline: "none", opacity: working ? 1 : 0.5,
+                }}
+              />
+              <input
+                type="time"
+                value={r?.end_time?.slice(0, 5) ?? ""}
+                disabled={!working}
+                onChange={(e) => update(dow, { end_time: e.target.value || null })}
+                style={{
+                  padding: "8px 10px", borderRadius: 6, border: "1px solid #2a2420",
+                  background: "#0C0A09", color: working ? "#F5F0EB" : "#5a504a", fontSize: 13,
+                  fontFamily: "inherit", outline: "none", opacity: working ? 1 : 0.5,
+                }}
+              />
+            </div>
+          );
+        })}
+      </div>
+
+      <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 18 }}>
+        <button onClick={save} disabled={saving} style={{
+          padding: "10px 22px", background: "#D4654A", color: "#fff",
+          border: "none", borderRadius: 8, fontWeight: 700, fontSize: 13,
+          cursor: saving ? "wait" : "pointer", fontFamily: "inherit",
+        }}>{saving ? "Saving…" : "Save schedule"}</button>
       </div>
     </div>
   );

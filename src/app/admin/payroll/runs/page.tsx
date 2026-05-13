@@ -122,21 +122,28 @@ export default function PayrollRunsPage() {
           </p>
         </div>
         {!showCreate && (
-          <button
-            onClick={() => setShowCreate(true)}
-            style={{
-              padding: "11px 22px",
-              background: "#D4654A",
-              color: "#fff",
-              border: "none",
-              borderRadius: 10,
-              fontWeight: 700,
-              cursor: "pointer",
-              fontFamily: "inherit",
-            }}
-          >
-            + New run
-          </button>
+          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+            <Link href="/admin/payroll/year-end" style={{
+              padding: "10px 16px", background: "transparent", color: "#E9B44C",
+              border: "1px solid #2a2420", borderRadius: 10, fontWeight: 600,
+              fontSize: 13, textDecoration: "none",
+            }}>📋 Year-end 7B</Link>
+            <button
+              onClick={() => setShowCreate(true)}
+              style={{
+                padding: "11px 22px",
+                background: "#D4654A",
+                color: "#fff",
+                border: "none",
+                borderRadius: 10,
+                fontWeight: 700,
+                cursor: "pointer",
+                fontFamily: "inherit",
+              }}
+            >
+              + New run
+            </button>
+          </div>
         )}
       </div>
 

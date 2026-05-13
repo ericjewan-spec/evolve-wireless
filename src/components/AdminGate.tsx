@@ -42,6 +42,8 @@ export function AdminGate({ children }: { children: React.ReactNode }) {
 
   const navItems: Array<{ href: string; label: string; ownerOnly?: boolean }> = [
     { href: "/admin/payroll", label: "Payroll" },
+    { href: "/admin/leave", label: "Leave" },
+    { href: "/admin/holidays", label: "Holidays" },
     { href: "/admin/admins", label: "Admins", ownerOnly: true },
   ];
 
