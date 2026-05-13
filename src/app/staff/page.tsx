@@ -12,6 +12,13 @@ type Snapshot = {
     period_end: string;
     net_pay: number;
   } | null;
+  onboarding: {
+    total: number;
+    done: number;
+    pendingRequired: number;
+    percent: number;
+  } | null;
+  openGoals: number;
 };
 
 const fmtGyd = (n: number) => "GYD " + Math.round(n).toLocaleString("en-GY");
@@ -33,7 +40,7 @@ export default function StaffDashboard() {
       since.setDate(since.getDate() - days);
       const sinceStr = since.toISOString().split("T")[0];
 
-      const [{ data: attRows }, { data: leaveRows }, { data: payslipRow }] = await Promise.all([
+      const [{ data: attRows }, { data: leaveRows }, { data: payslipRow }, { data: onboardingRows }, { data: goalRows }] = await Promise.all([
         supabase.from("attendance").select("hours_worked").gte("date", sinceStr),
         supabase.from("leave_requests").select("id").eq("status", "pending"),
         supabase.from("payroll_items")
@@ -41,13 +48,14 @@ export default function StaffDashboard() {
           .order("created_at", { ascending: false })
           .limit(1)
           .maybeSingle(),
+        supabase.from("employee_onboarding_items").select("status, required"),
+        supabase.from("employee_events").select("id").eq("category", "goal").in("status", ["open", "in_progress"]),
       ]);
 
       const hours = (attRows || []).reduce((sum, a) => sum + (a.hours_worked || 0), 0);
 
       let lastPayslip: Snapshot["lastPayslip"] = null;
       if (payslipRow) {
-        // payroll_runs comes back as an object (single FK)
         const run = (payslipRow as { payroll_runs?: { period_end?: string } }).payroll_runs;
         lastPayslip = {
           period_end: run?.period_end ?? "",
@@ -55,10 +63,25 @@ export default function StaffDashboard() {
         };
       }
 
+      let onboarding: Snapshot["onboarding"] = null;
+      if (onboardingRows && onboardingRows.length > 0) {
+        const total = onboardingRows.length;
+        const done = onboardingRows.filter((r: { status: string }) => r.status === "done" || r.status === "waived" || r.status === "na").length;
+        const pendingRequired = onboardingRows.filter((r: { status: string; required: boolean }) => r.status === "pending" && r.required).length;
+        onboarding = {
+          total,
+          done,
+          pendingRequired,
+          percent: total ? Math.round((done / total) * 100) : 0,
+        };
+      }
+
       setSnap({
         hoursThisPeriod: Math.round(hours * 10) / 10,
         pendingLeaveCount: (leaveRows || []).length,
         lastPayslip,
+        onboarding,
+        openGoals: (goalRows || []).length,
       });
     }
 
@@ -79,6 +102,42 @@ export default function StaffDashboard() {
           {employee.role}{employee.department ? ` · ${employee.department}` : ""}
         </p>
       </div>
+
+      {/* Onboarding banner — only shows while onboarding is incomplete */}
+      {snap?.onboarding && snap.onboarding.percent < 100 && (
+        <div style={{
+          background: "linear-gradient(135deg, rgba(212,101,74,0.10) 0%, rgba(233,180,76,0.06) 100%)",
+          border: "1px solid rgba(212,101,74,0.25)",
+          borderRadius: 12,
+          padding: "18px 20px",
+          marginBottom: 24,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          flexWrap: "wrap",
+          gap: 16,
+        }}>
+          <div style={{ flex: 1, minWidth: 240 }}>
+            <div style={{ fontSize: 11, color: "#D4654A", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 4 }}>Onboarding in progress</div>
+            <div style={{ fontSize: 16, fontWeight: 700, color: "#F5F0EB", marginBottom: 2 }}>
+              {snap.onboarding.done} of {snap.onboarding.total} items complete
+            </div>
+            {snap.onboarding.pendingRequired > 0 && (
+              <div style={{ fontSize: 12, color: "#E9B44C" }}>
+                {snap.onboarding.pendingRequired} required item{snap.onboarding.pendingRequired === 1 ? "" : "s"} still pending — speak to HR
+              </div>
+            )}
+          </div>
+          <div style={{ minWidth: 200 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+              <span style={{ fontSize: 11, color: "#8B7355", fontWeight: 700 }}>{snap.onboarding.percent}%</span>
+            </div>
+            <div style={{ height: 6, background: "#0C0A09", borderRadius: 100, overflow: "hidden" }}>
+              <div style={{ height: "100%", width: `${snap.onboarding.percent}%`, background: "#D4654A", transition: "width 0.3s" }} />
+            </div>
+          </div>
+        </div>
+      )}
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14, marginBottom: 28 }}>
         <Card label="Vacation balance" value={`${employee.leave_balance_vacation ?? 0}`} unit="days" color="#E9B44C" href="/staff/leave" />
@@ -106,6 +165,12 @@ export default function StaffDashboard() {
           <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 4 }}>
             <Link href="/staff/leave" style={qlLink}>📅 Request leave</Link>
             <Link href="/staff/documents" style={qlLink}>📎 Upload a sick note</Link>
+            <Link href="/staff/development" style={qlLink}>
+              🎯 My development
+              {snap && snap.openGoals > 0 && (
+                <span style={{ marginLeft: 8, padding: "1px 8px", background: "rgba(233,180,76,0.14)", color: "#E9B44C", borderRadius: 100, fontSize: 11, fontWeight: 700 }}>{snap.openGoals} open</span>
+              )}
+            </Link>
             <Link href="/staff/profile" style={qlLink}>👤 Update my profile</Link>
           </div>
         </Panel>

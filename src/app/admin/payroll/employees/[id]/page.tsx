@@ -118,7 +118,7 @@ const fmtBytes = (n: number | null) => {
   return `${(n / 1024 / 1024).toFixed(1)} MB`;
 };
 
-type Tab = "profile" | "documents" | "history" | "portal" | "schedule";
+type Tab = "profile" | "documents" | "history" | "portal" | "schedule" | "performance" | "onboarding";
 
 export default function EmployeeDetailPage() {
   const params = useParams();
@@ -301,7 +301,7 @@ export default function EmployeeDetailPage() {
 
       {/* Tabs */}
       <div style={{ display: "flex", gap: 4, borderBottom: "1px solid #1e1a17", marginBottom: 24, flexWrap: "wrap" }}>
-        {(["profile", "documents", "history", "portal", "schedule"] as Tab[]).map((t) => (
+        {(["profile", "documents", "history", "portal", "schedule", "performance", "onboarding"] as Tab[]).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -322,6 +322,8 @@ export default function EmployeeDetailPage() {
               : t === "documents" ? `Documents (${docs.length})`
               : t === "history" ? `History (${audit.length})`
               : t === "schedule" ? "Schedule"
+              : t === "performance" ? "Performance"
+              : t === "onboarding" ? "Onboarding"
               : `Portal & Leave${leaves.filter(l => l.status === "pending").length ? ` (${leaves.filter(l => l.status === "pending").length})` : ""}`}
           </button>
         ))}
@@ -371,6 +373,10 @@ export default function EmployeeDetailPage() {
       )}
 
       {tab === "schedule" && <SchedulePanel employeeId={employee.id} firstName={employee.first_name} />}
+
+      {tab === "performance" && <PerformancePanel employeeId={employee.id} firstName={employee.first_name} />}
+
+      {tab === "onboarding" && <OnboardingPanel employeeId={employee.id} firstName={employee.first_name} />}
     </div>
   );
 }
@@ -1424,6 +1430,687 @@ function SchedulePanel({ employeeId, firstName }: { employeeId: string; firstNam
           cursor: saving ? "wait" : "pointer", fontFamily: "inherit",
         }}>{saving ? "Saving…" : "Save schedule"}</button>
       </div>
+    </div>
+  );
+}
+
+/* ============================================================
+   PERFORMANCE PANEL — write-many timeline of performance events
+============================================================ */
+type PerfEvent = {
+  id: string;
+  employee_id: string;
+  category: "review" | "goal" | "warning" | "kudos" | "training" | "certification" | "note";
+  title: string;
+  body: string | null;
+  event_date: string;
+  status: "open" | "in_progress" | "complete" | "cancelled";
+  rating: number | null;
+  staff_visible: boolean;
+  attachment_path: string | null;
+  attachment_filename: string | null;
+  attachment_mime: string | null;
+  attachment_size: number | null;
+  created_at: string;
+};
+
+const PERF_CATEGORY_LABEL: Record<PerfEvent["category"], string> = {
+  review: "Review",
+  goal: "Goal",
+  warning: "Warning",
+  kudos: "Kudos",
+  training: "Training",
+  certification: "Certification",
+  note: "HR Note",
+};
+
+const PERF_CATEGORY_COLOR: Record<PerfEvent["category"], string> = {
+  review: "#9c7bd4",
+  goal: "#E9B44C",
+  warning: "#ff8a7a",
+  kudos: "#4CAF50",
+  training: "#D4654A",
+  certification: "#4CAF50",
+  note: "#8B7355",
+};
+
+function PerformancePanel({ employeeId, firstName }: { employeeId: string; firstName: string }) {
+  const supabase = createClient();
+  const [events, setEvents] = useState<PerfEvent[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [info, setInfo] = useState("");
+  const [adding, setAdding] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [filter, setFilter] = useState<"all" | PerfEvent["category"]>("all");
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [draft, setDraft] = useState<Partial<PerfEvent>>({
+    category: "review",
+    title: "",
+    body: "",
+    event_date: new Date().toISOString().slice(0, 10),
+    status: "open",
+    rating: null,
+    staff_visible: false,
+  });
+
+  const fetchAll = useCallback(async () => {
+    setLoading(true);
+    const { data } = await supabase
+      .from("employee_events")
+      .select("*")
+      .eq("employee_id", employeeId)
+      .order("event_date", { ascending: false })
+      .order("created_at", { ascending: false });
+    setEvents((data as PerfEvent[]) || []);
+    setLoading(false);
+  }, [supabase, employeeId]);
+
+  useEffect(() => { fetchAll(); }, [fetchAll]);
+
+  function resetDraft() {
+    setDraft({
+      category: "review",
+      title: "",
+      body: "",
+      event_date: new Date().toISOString().slice(0, 10),
+      status: "open",
+      rating: null,
+      staff_visible: false,
+    });
+    setPendingFile(null);
+  }
+
+  async function saveEvent() {
+    setError("");
+    if (!draft.title?.trim()) { setError("Title is required."); return; }
+    setBusy(true);
+
+    // Insert event row first to get its ID for storage path
+    const { data: created, error: e } = await supabase
+      .from("employee_events")
+      .insert({
+        employee_id: employeeId,
+        category: draft.category,
+        title: draft.title.trim(),
+        body: draft.body?.trim() || null,
+        event_date: draft.event_date,
+        status: draft.status,
+        rating: draft.rating,
+        staff_visible: draft.staff_visible || false,
+      })
+      .select("id")
+      .single();
+
+    if (e || !created) {
+      setError(e?.message || "Could not save event.");
+      setBusy(false);
+      return;
+    }
+
+    // Upload attachment if any
+    if (pendingFile) {
+      const safeName = pendingFile.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+      const storagePath = `${employeeId}/${created.id}_${safeName}`;
+      const { error: upErr } = await supabase.storage
+        .from("performance-attachments")
+        .upload(storagePath, pendingFile, { contentType: pendingFile.type, upsert: false });
+      if (upErr) {
+        setError(`Event saved, but attachment upload failed: ${upErr.message}`);
+        setBusy(false);
+        await fetchAll();
+        return;
+      }
+      // Update the event with attachment metadata
+      await supabase.from("employee_events").update({
+        attachment_path: storagePath,
+        attachment_filename: pendingFile.name,
+        attachment_mime: pendingFile.type,
+        attachment_size: pendingFile.size,
+      }).eq("id", created.id);
+    }
+
+    setAdding(false);
+    resetDraft();
+    setInfo("Saved.");
+    setBusy(false);
+    fetchAll();
+  }
+
+  async function downloadAttachment(ev: PerfEvent) {
+    if (!ev.attachment_path) return;
+    const { data, error: e } = await supabase.storage
+      .from("performance-attachments")
+      .createSignedUrl(ev.attachment_path, 60);
+    if (e || !data?.signedUrl) { alert("Could not get download link"); return; }
+    window.open(data.signedUrl, "_blank");
+  }
+
+  async function deleteEvent(ev: PerfEvent) {
+    if (!confirm(`Delete "${ev.title}"? This is permanent.`)) return;
+    if (ev.attachment_path) {
+      await supabase.storage.from("performance-attachments").remove([ev.attachment_path]);
+    }
+    const { error: e } = await supabase.from("employee_events").delete().eq("id", ev.id);
+    if (e) { alert(e.message); return; }
+    fetchAll();
+  }
+
+  async function toggleVisibility(ev: PerfEvent) {
+    const allowedToShare = ["review", "goal", "kudos", "training", "certification"].includes(ev.category);
+    if (!allowedToShare) {
+      alert("Warnings and HR notes cannot be made visible to staff.");
+      return;
+    }
+    const { error: e } = await supabase
+      .from("employee_events")
+      .update({ staff_visible: !ev.staff_visible })
+      .eq("id", ev.id);
+    if (e) { alert(e.message); return; }
+    fetchAll();
+  }
+
+  async function updateStatus(ev: PerfEvent, newStatus: PerfEvent["status"]) {
+    const { error: e } = await supabase
+      .from("employee_events")
+      .update({ status: newStatus })
+      .eq("id", ev.id);
+    if (e) { alert(e.message); return; }
+    fetchAll();
+  }
+
+  const filtered = filter === "all" ? events : events.filter(e => e.category === filter);
+  const counts = events.reduce((acc, e) => {
+    acc[e.category] = (acc[e.category] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  return (
+    <div>
+      {error && (
+        <div style={{ padding: 10, background: "rgba(255,107,94,0.08)", color: "#ff8a7a", borderRadius: 6, marginBottom: 12, fontSize: 13 }}>{error}</div>
+      )}
+      {info && (
+        <div style={{ padding: 10, background: "rgba(76,175,80,0.08)", color: "#4CAF50", borderRadius: 6, marginBottom: 12, fontSize: 13 }}>{info}</div>
+      )}
+
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 10 }}>
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          <FilterChip label="All" count={events.length} active={filter === "all"} onClick={() => setFilter("all")} />
+          {(Object.keys(PERF_CATEGORY_LABEL) as PerfEvent["category"][]).map(cat => (
+            <FilterChip
+              key={cat}
+              label={PERF_CATEGORY_LABEL[cat]}
+              count={counts[cat] || 0}
+              active={filter === cat}
+              color={PERF_CATEGORY_COLOR[cat]}
+              onClick={() => setFilter(cat)}
+            />
+          ))}
+        </div>
+        {!adding && (
+          <button onClick={() => setAdding(true)} style={{
+            padding: "8px 16px", background: "#D4654A", color: "#fff",
+            border: "none", borderRadius: 8, fontWeight: 700, fontSize: 13,
+            cursor: "pointer", fontFamily: "inherit",
+          }}>+ New entry</button>
+        )}
+      </div>
+
+      {adding && (
+        <div style={{ padding: 18, background: "#100E0C", border: "1px solid #D4654A", borderRadius: 12, marginBottom: 16 }}>
+          <h3 style={{ margin: "0 0 14px 0", fontSize: 15, color: "#F5F0EB" }}>New entry for {firstName}</h3>
+          <div style={{ display: "grid", gridTemplateColumns: "180px 1fr 160px", gap: 12, marginBottom: 12 }}>
+            <Field2 label="Category">
+              <select value={draft.category} onChange={(e) => setDraft({ ...draft, category: e.target.value as PerfEvent["category"] })} style={inputS}>
+                {Object.entries(PERF_CATEGORY_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+              </select>
+            </Field2>
+            <Field2 label="Title">
+              <input value={draft.title || ""} onChange={(e) => setDraft({ ...draft, title: e.target.value })} placeholder="Short summary" style={inputS} autoFocus />
+            </Field2>
+            <Field2 label="Date">
+              <input type="date" value={draft.event_date} onChange={(e) => setDraft({ ...draft, event_date: e.target.value })} style={inputS} />
+            </Field2>
+          </div>
+          <Field2 label="Details (optional)">
+            <textarea
+              value={draft.body || ""}
+              onChange={(e) => setDraft({ ...draft, body: e.target.value })}
+              placeholder="Notes, context, full review text, etc."
+              rows={4}
+              style={{ ...inputS, resize: "vertical", fontFamily: "inherit" }}
+            />
+          </Field2>
+
+          {(draft.category === "goal") && (
+            <div style={{ marginTop: 12 }}>
+              <Field2 label="Goal status">
+                <select value={draft.status} onChange={(e) => setDraft({ ...draft, status: e.target.value as PerfEvent["status"] })} style={inputS}>
+                  <option value="open">Open</option>
+                  <option value="in_progress">In progress</option>
+                  <option value="complete">Complete</option>
+                  <option value="cancelled">Cancelled</option>
+                </select>
+              </Field2>
+            </div>
+          )}
+
+          {(draft.category === "review") && (
+            <div style={{ marginTop: 12 }}>
+              <Field2 label="Overall rating (1-5, optional)">
+                <select value={draft.rating?.toString() || ""} onChange={(e) => setDraft({ ...draft, rating: e.target.value ? Number(e.target.value) : null })} style={inputS}>
+                  <option value="">No rating</option>
+                  <option value="1">1 — Needs significant improvement</option>
+                  <option value="2">2 — Below expectations</option>
+                  <option value="3">3 — Meets expectations</option>
+                  <option value="4">4 — Exceeds expectations</option>
+                  <option value="5">5 — Outstanding</option>
+                </select>
+              </Field2>
+            </div>
+          )}
+
+          <div style={{ marginTop: 12 }}>
+            <Field2 label="Attachment (optional, PDF/PNG/JPG, max 10MB)">
+              <input
+                type="file"
+                accept="application/pdf,image/png,image/jpeg,image/webp"
+                onChange={(e) => setPendingFile(e.target.files?.[0] || null)}
+                style={{ ...inputS, padding: "6px" }}
+              />
+              {pendingFile && <div style={{ color: "#8B7355", fontSize: 11, marginTop: 4 }}>{pendingFile.name} · {Math.round(pendingFile.size / 1024)} KB</div>}
+            </Field2>
+          </div>
+
+          {["review", "goal", "kudos", "training", "certification"].includes(draft.category || "") && (
+            <label style={{ display: "flex", alignItems: "center", gap: 8, color: "#F5F0EB", fontSize: 13, marginTop: 14 }}>
+              <input type="checkbox" checked={draft.staff_visible || false} onChange={(e) => setDraft({ ...draft, staff_visible: e.target.checked })} />
+              Make this visible to {firstName} in their staff portal
+            </label>
+          )}
+
+          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 16 }}>
+            <button onClick={() => { setAdding(false); resetDraft(); setError(""); }} style={btnS}>Cancel</button>
+            <button onClick={saveEvent} disabled={busy} style={{ ...btnP, opacity: busy ? 0.6 : 1 }}>
+              {busy ? "Saving…" : "Save entry"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {loading ? (
+        <div style={{ textAlign: "center", color: "#8B7355", padding: 30 }}>Loading…</div>
+      ) : filtered.length === 0 ? (
+        <div style={{ padding: 30, textAlign: "center", color: "#8B7355", background: "#141210", border: "1px solid #1e1a17", borderRadius: 12 }}>
+          {events.length === 0
+            ? `No performance entries for ${firstName} yet. Click + New entry above to start.`
+            : `No entries in "${filter}" category.`}
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {filtered.map(ev => (
+            <PerfEventCard
+              key={ev.id}
+              event={ev}
+              onDelete={() => deleteEvent(ev)}
+              onToggleVis={() => toggleVisibility(ev)}
+              onDownload={() => downloadAttachment(ev)}
+              onUpdateStatus={(s) => updateStatus(ev, s)}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PerfEventCard({ event, onDelete, onToggleVis, onDownload, onUpdateStatus }: {
+  event: PerfEvent;
+  onDelete: () => void;
+  onToggleVis: () => void;
+  onDownload: () => void;
+  onUpdateStatus: (s: PerfEvent["status"]) => void;
+}) {
+  const color = PERF_CATEGORY_COLOR[event.category];
+  const canShare = ["review", "goal", "kudos", "training", "certification"].includes(event.category);
+
+  return (
+    <div style={{
+      padding: 14,
+      background: "#141210",
+      border: `1px solid ${event.staff_visible ? "rgba(76,175,80,0.3)" : "#1e1a17"}`,
+      borderLeftWidth: 3,
+      borderLeftColor: color,
+      borderRadius: 8,
+    }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
+        <div style={{ flex: 1, minWidth: 200 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 4 }}>
+            <span style={{
+              padding: "2px 8px",
+              borderRadius: 100,
+              fontSize: 9,
+              fontWeight: 700,
+              letterSpacing: "0.06em",
+              background: `${color}1a`,
+              color,
+            }}>{PERF_CATEGORY_LABEL[event.category].toUpperCase()}</span>
+            <span style={{ color: "#8B7355", fontSize: 11 }}>
+              {new Date(event.event_date + "T12:00:00").toLocaleDateString("en-GY", { day: "numeric", month: "short", year: "numeric" })}
+            </span>
+            {event.rating && (
+              <span style={{ color: "#E9B44C", fontSize: 11, fontWeight: 700 }}>★ {event.rating}/5</span>
+            )}
+            {event.staff_visible && (
+              <span style={{ padding: "2px 8px", borderRadius: 100, fontSize: 9, fontWeight: 700, background: "rgba(76,175,80,0.12)", color: "#4CAF50" }}>VISIBLE TO STAFF</span>
+            )}
+          </div>
+          <div style={{ fontWeight: 700, fontSize: 14, color: "#F5F0EB", marginBottom: event.body ? 6 : 0 }}>{event.title}</div>
+          {event.body && (
+            <div style={{ color: "#E8DECE", fontSize: 13, lineHeight: 1.5, whiteSpace: "pre-wrap" }}>{event.body}</div>
+          )}
+          {event.attachment_path && (
+            <button onClick={onDownload} style={{
+              marginTop: 8, padding: "5px 10px", background: "rgba(212,101,74,0.12)",
+              color: "#D4654A", border: "1px solid rgba(212,101,74,0.25)", borderRadius: 6,
+              fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
+            }}>↓ {event.attachment_filename || "Attachment"}</button>
+          )}
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-end" }}>
+          {event.category === "goal" && (
+            <select
+              value={event.status}
+              onChange={(e) => onUpdateStatus(e.target.value as PerfEvent["status"])}
+              style={{ ...inputS, padding: "4px 8px", fontSize: 11, width: "auto" }}
+            >
+              <option value="open">Open</option>
+              <option value="in_progress">In progress</option>
+              <option value="complete">Complete</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+          )}
+          {canShare && (
+            <button onClick={onToggleVis} style={{ ...btnS, fontSize: 10, padding: "4px 8px" }}>
+              {event.staff_visible ? "Hide from staff" : "Show to staff"}
+            </button>
+          )}
+          <button onClick={onDelete} style={{ ...btnS, fontSize: 10, padding: "4px 8px", color: "#ff8a7a" }}>Delete</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FilterChip({ label, count, active, onClick, color }: { label: string; count: number; active: boolean; onClick: () => void; color?: string }) {
+  return (
+    <button onClick={onClick} style={{
+      padding: "6px 12px",
+      borderRadius: 100,
+      border: `1px solid ${active ? (color || "#D4654A") : "#2a2420"}`,
+      background: active ? (color ? `${color}1a` : "rgba(212,101,74,0.12)") : "transparent",
+      color: active ? (color || "#D4654A") : "#8B7355",
+      fontSize: 11,
+      fontWeight: 700,
+      cursor: "pointer",
+      fontFamily: "inherit",
+    }}>
+      {label} {count > 0 && <span style={{ opacity: 0.7 }}>({count})</span>}
+    </button>
+  );
+}
+
+function Field2({ label, children }: { label: string; children: React.ReactNode }) {
+  return <div><div style={{ fontSize: 11, color: "#8B7355", fontWeight: 600, marginBottom: 4 }}>{label}</div>{children}</div>;
+}
+
+const inputS: React.CSSProperties = {
+  width: "100%", padding: "9px 11px", borderRadius: 6, border: "1px solid #2a2420",
+  background: "#0C0A09", color: "#F5F0EB", fontSize: 13, fontFamily: "inherit", outline: "none", boxSizing: "border-box",
+};
+const btnP: React.CSSProperties = {
+  padding: "9px 16px", background: "#D4654A", color: "#fff", border: "none",
+  borderRadius: 6, fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: "inherit",
+};
+const btnS: React.CSSProperties = {
+  padding: "8px 14px", background: "transparent", color: "#F5F0EB", border: "1px solid #2a2420",
+  borderRadius: 6, fontWeight: 600, fontSize: 12, cursor: "pointer", fontFamily: "inherit",
+};
+
+/* ============================================================
+   ONBOARDING PANEL — per-employee checklist
+============================================================ */
+type OnboardingItem = {
+  id: string;
+  employee_id: string;
+  template_item_id: string | null;
+  ord: number;
+  title: string;
+  description: string | null;
+  category: "admin" | "documents" | "equipment" | "training" | "accounts" | "other";
+  required: boolean;
+  status: "pending" | "done" | "waived" | "na";
+  completed_at: string | null;
+  notes: string | null;
+};
+
+const ONB_CAT_LABEL: Record<OnboardingItem["category"], string> = {
+  admin: "Admin",
+  documents: "Documents",
+  equipment: "Equipment",
+  training: "Training",
+  accounts: "Accounts",
+  other: "Other",
+};
+const ONB_CAT_COLOR: Record<OnboardingItem["category"], string> = {
+  admin: "#8B7355",
+  documents: "#D4654A",
+  equipment: "#E9B44C",
+  training: "#4CAF50",
+  accounts: "#9c7bd4",
+  other: "#7A7068",
+};
+const STATUS_COLOR: Record<OnboardingItem["status"], string> = {
+  pending: "#8B7355",
+  done: "#4CAF50",
+  waived: "#7A7068",
+  na: "#5a504a",
+};
+
+function OnboardingPanel({ employeeId, firstName }: { employeeId: string; firstName: string }) {
+  const supabase = createClient();
+  const [items, setItems] = useState<OnboardingItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [info, setInfo] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const fetchAll = useCallback(async () => {
+    setLoading(true);
+    const { data } = await supabase
+      .from("employee_onboarding_items")
+      .select("*")
+      .eq("employee_id", employeeId)
+      .order("ord", { ascending: true });
+    setItems((data as OnboardingItem[]) || []);
+    setLoading(false);
+  }, [supabase, employeeId]);
+
+  useEffect(() => { fetchAll(); }, [fetchAll]);
+
+  async function initialize() {
+    if (!confirm(`Initialize ${firstName}'s onboarding checklist from the default template?`)) return;
+    setError(""); setInfo(""); setBusy(true);
+    const { data, error: e } = await supabase.rpc("init_onboarding_for_employee", { p_employee_id: employeeId });
+    setBusy(false);
+    if (e) { setError(e.message); return; }
+    setInfo(`Added ${data ?? 0} checklist items from the template.`);
+    fetchAll();
+  }
+
+  async function setStatus(it: OnboardingItem, newStatus: OnboardingItem["status"]) {
+    const update: Partial<OnboardingItem> & { completed_at?: string | null; completed_by_id?: string | null } = { status: newStatus };
+    if (newStatus === "done" || newStatus === "waived" || newStatus === "na") {
+      update.completed_at = new Date().toISOString();
+      const { data: { user } } = await supabase.auth.getUser();
+      update.completed_by_id = user?.id ?? null;
+    } else {
+      update.completed_at = null;
+      update.completed_by_id = null;
+    }
+    const { error: e } = await supabase.from("employee_onboarding_items").update(update).eq("id", it.id);
+    if (e) { alert(e.message); return; }
+    fetchAll();
+  }
+
+  async function deleteItem(it: OnboardingItem) {
+    if (!confirm(`Remove "${it.title}" from ${firstName}'s checklist?`)) return;
+    const { error: e } = await supabase.from("employee_onboarding_items").delete().eq("id", it.id);
+    if (e) { alert(e.message); return; }
+    fetchAll();
+  }
+
+  const total = items.length;
+  const done = items.filter(i => i.status === "done" || i.status === "waived" || i.status === "na").length;
+  const pendingRequired = items.filter(i => i.status === "pending" && i.required).length;
+  const percent = total ? Math.round((done / total) * 100) : 0;
+
+  // Group by category for display
+  const byCategory = items.reduce((acc, it) => {
+    (acc[it.category] = acc[it.category] || []).push(it);
+    return acc;
+  }, {} as Record<OnboardingItem["category"], OnboardingItem[]>);
+
+  return (
+    <div>
+      {error && <div style={{ padding: 10, background: "rgba(255,107,94,0.08)", color: "#ff8a7a", borderRadius: 6, marginBottom: 12, fontSize: 13 }}>{error}</div>}
+      {info && <div style={{ padding: 10, background: "rgba(76,175,80,0.08)", color: "#4CAF50", borderRadius: 6, marginBottom: 12, fontSize: 13 }}>{info}</div>}
+
+      {items.length === 0 ? (
+        <div style={{ padding: 40, textAlign: "center", color: "#8B7355", background: "#141210", border: "1px solid #1e1a17", borderRadius: 12 }}>
+          <p style={{ margin: "0 0 14px 0", color: "#F5F0EB", fontWeight: 700 }}>
+            {firstName} doesn&apos;t have an onboarding checklist yet.
+          </p>
+          <p style={{ margin: "0 0 20px 0", fontSize: 13, color: "#8B7355", maxWidth: 460, marginLeft: "auto", marginRight: "auto" }}>
+            Initialize from the default template (currently {/* count */}items across documents, accounts, equipment, and training). You can customize per-hire after.
+          </p>
+          <button onClick={initialize} disabled={busy} style={btnP}>
+            {busy ? "Initializing…" : "Initialize onboarding"}
+          </button>
+        </div>
+      ) : (
+        <>
+          {/* Progress strip */}
+          <div style={{ padding: 16, background: "#141210", border: "1px solid #1e1a17", borderRadius: 12, marginBottom: 18 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+              <div>
+                <div style={{ color: "#8B7355", fontSize: 11, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase" }}>Progress</div>
+                <div style={{ color: "#F5F0EB", fontSize: 24, fontWeight: 800, marginTop: 2 }}>
+                  {percent}<span style={{ fontSize: 14, color: "#8B7355", fontWeight: 600 }}>%</span>
+                </div>
+              </div>
+              <div style={{ textAlign: "right", fontSize: 13, color: "#8B7355" }}>
+                <div><strong style={{ color: "#F5F0EB" }}>{done}</strong> of {total} done</div>
+                {pendingRequired > 0 && (
+                  <div style={{ color: "#ff8a7a", fontSize: 12 }}>{pendingRequired} required pending</div>
+                )}
+              </div>
+            </div>
+            <div style={{ height: 6, background: "#0C0A09", borderRadius: 100, overflow: "hidden" }}>
+              <div style={{ height: "100%", width: `${percent}%`, background: percent === 100 ? "#4CAF50" : "#D4654A", transition: "width 0.3s" }} />
+            </div>
+            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 14 }}>
+              <button onClick={initialize} disabled={busy} style={btnS}>
+                {busy ? "Adding…" : "Sync missing items from template"}
+              </button>
+            </div>
+          </div>
+
+          {/* Items grouped by category */}
+          {(["documents", "accounts", "equipment", "training", "admin", "other"] as OnboardingItem["category"][]).map(cat => {
+            const catItems = byCategory[cat] || [];
+            if (catItems.length === 0) return null;
+            return (
+              <div key={cat} style={{ marginBottom: 20 }}>
+                <h2 style={{
+                  fontSize: 11, fontWeight: 700, color: ONB_CAT_COLOR[cat],
+                  letterSpacing: "0.08em", margin: "0 0 8px 0", textTransform: "uppercase",
+                }}>{ONB_CAT_LABEL[cat]} ({catItems.length})</h2>
+                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                  {catItems.map(it => (
+                    <OnboardingItemRow
+                      key={it.id}
+                      item={it}
+                      onSetStatus={(s) => setStatus(it, s)}
+                      onDelete={() => deleteItem(it)}
+                    />
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </>
+      )}
+    </div>
+  );
+}
+
+function OnboardingItemRow({ item, onSetStatus, onDelete }: {
+  item: OnboardingItem;
+  onSetStatus: (s: OnboardingItem["status"]) => void;
+  onDelete: () => void;
+}) {
+  const isDone = item.status === "done";
+  const isWaivedOrNa = item.status === "waived" || item.status === "na";
+  return (
+    <div style={{
+      display: "grid",
+      gridTemplateColumns: "24px 1fr auto auto",
+      gap: 12,
+      alignItems: "center",
+      padding: "11px 14px",
+      background: isDone ? "rgba(76,175,80,0.04)" : isWaivedOrNa ? "rgba(139,115,85,0.04)" : "#141210",
+      border: `1px solid ${isDone ? "rgba(76,175,80,0.18)" : "#1e1a17"}`,
+      borderRadius: 8,
+      opacity: isWaivedOrNa ? 0.6 : 1,
+    }}>
+      <input
+        type="checkbox"
+        checked={isDone}
+        onChange={(e) => onSetStatus(e.target.checked ? "done" : "pending")}
+        style={{ cursor: "pointer", accentColor: "#4CAF50" }}
+      />
+      <div>
+        <div style={{
+          fontWeight: 700, fontSize: 13,
+          color: isDone ? "#8B7355" : "#F5F0EB",
+          textDecoration: isDone ? "line-through" : "none",
+        }}>{item.title}</div>
+        {item.description && (
+          <div style={{ color: "#8B7355", fontSize: 11, marginTop: 2 }}>{item.description}</div>
+        )}
+        {item.completed_at && (item.status === "done" || isWaivedOrNa) && (
+          <div style={{ color: "#7A7068", fontSize: 10, marginTop: 3 }}>
+            {item.status === "done" ? "Completed" : item.status === "waived" ? "Waived" : "N/A"} {new Date(item.completed_at).toLocaleDateString("en-GY")}
+          </div>
+        )}
+      </div>
+      <select
+        value={item.status}
+        onChange={(e) => onSetStatus(e.target.value as OnboardingItem["status"])}
+        style={{
+          ...inputS, padding: "4px 8px", fontSize: 11, width: "auto",
+          color: STATUS_COLOR[item.status], fontWeight: 700,
+        }}
+      >
+        <option value="pending">Pending</option>
+        <option value="done">Done</option>
+        <option value="waived">Waived</option>
+        <option value="na">N/A</option>
+      </select>
+      <button onClick={onDelete} style={{ ...btnS, padding: "4px 8px", fontSize: 10, color: "#ff8a7a" }}>×</button>
     </div>
   );
 }
