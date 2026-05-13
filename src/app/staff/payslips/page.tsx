@@ -17,11 +17,17 @@ type PayslipRow = {
   paye_deduction: number;
   other_deductions: number;
   net_pay: number;
+  personal_allowance: number | null;
+  chargeable_income: number | null;
+  pdf_path: string | null;
+  payslip_sent_at: string | null;
   notes: string | null;
   payroll_runs: {
     period_start: string;
     period_end: string;
+    period_label: string | null;
     pay_cycle: string;
+    pay_date: string | null;
     status: string;
   } | null;
 };
@@ -41,7 +47,8 @@ export default function StaffPayslipsPage() {
     const supabase = createClient();
     const { data } = await supabase
       .from("payroll_items")
-      .select("*, payroll_runs(period_start, period_end, pay_cycle, status)")
+      .select("*, payroll_runs(period_start, period_end, period_label, pay_cycle, pay_date, status)")
+      .eq("payroll_runs.status", "paid")
       .order("created_at", { ascending: false });
     setRows((data as unknown as PayslipRow[]) || []);
     setLoadingRows(false);
@@ -108,6 +115,32 @@ export default function StaffPayslipsPage() {
                     </div>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    {r.pdf_path && (
+                      <button
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          const supabase = createClient();
+                          const { data, error } = await supabase.storage
+                            .from("payslips")
+                            .createSignedUrl(r.pdf_path!, 60);
+                          if (data?.signedUrl) window.open(data.signedUrl, "_blank");
+                          else alert("Could not get download link: " + (error?.message || "unknown"));
+                        }}
+                        style={{
+                          padding: "6px 12px",
+                          background: "rgba(212,101,74,0.12)",
+                          color: "#D4654A",
+                          border: "1px solid rgba(212,101,74,0.25)",
+                          borderRadius: 6,
+                          fontSize: 12,
+                          fontWeight: 700,
+                          cursor: "pointer",
+                          fontFamily: "inherit",
+                        }}
+                      >
+                        ↓ PDF
+                      </button>
+                    )}
                     <div style={{ textAlign: "right" }}>
                       <div style={{ fontSize: 18, fontWeight: 800, color: "#F5F0EB" }}>{fmtGyd(r.net_pay)}</div>
                       <div style={{ color: "#8B7355", fontSize: 11 }}>net</div>

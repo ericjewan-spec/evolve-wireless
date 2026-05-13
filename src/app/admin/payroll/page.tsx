@@ -272,7 +272,17 @@ export default function PayrollDashboard() {
         {/* ===== PAYROLL TAB ===== */}
         {tab === "payroll" && (
           <>
-            <h2 style={{ fontFamily: "'Bricolage Grotesque', serif", fontWeight: 700, color: "#F5F0EB", marginBottom: "16px" }}>Payroll Calculator</h2>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12, marginBottom: "16px" }}>
+              <div>
+                <h2 style={{ fontFamily: "'Bricolage Grotesque', serif", fontWeight: 700, color: "#F5F0EB", margin: 0 }}>Payroll Calculator</h2>
+                <p style={{ color: "#8B7355", fontSize: 12, margin: "4px 0 0 0" }}>
+                  Quick preview only — gross pay from attendance, no NIS / PAYE. For real payroll, use <Link href="/admin/payroll/runs" style={{ color: "#D4654A", textDecoration: "none", fontWeight: 700 }}>Payroll Runs →</Link>
+                </p>
+              </div>
+              <Link href="/admin/payroll/runs" style={{ ...s(true), fontSize: "0.82rem", textDecoration: "none", display: "inline-block" }}>
+                💼 Payroll Runs
+              </Link>
+            </div>
 
             <div style={{ display: "flex", gap: "12px", marginBottom: "20px", alignItems: "end", flexWrap: "wrap" }}>
               <div><label style={label}>Period Start</label><input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} style={{ ...input, width: "auto" }} /></div>
