@@ -91,9 +91,45 @@ export async function middleware(request: NextRequest) {
     }
   }
 
+  // ============ STAFF PORTAL ============
+  // Public staff pages: /staff/login (sign in), /staff/reset-password (post-email recovery).
+  const isPublicStaffPath =
+    pathname === "/staff/login" || pathname === "/staff/reset-password";
+
+  if (pathname.startsWith("/staff") && !isPublicStaffPath) {
+    if (!user) {
+      const next = request.nextUrl.clone();
+      next.pathname = "/staff/login";
+      next.searchParams.set("next", pathname);
+      return NextResponse.redirect(next);
+    }
+
+    // Verify the signed-in user is staff (has a linked, portal-enabled employee row).
+    // We use the SECURITY DEFINER my_account_kind() function so this works without
+    // RLS-on-employees fighting us.
+    const { data: kindRow } = await supabase.rpc("my_account_kind");
+    if (kindRow !== "staff") {
+      await supabase.auth.signOut();
+      const next = request.nextUrl.clone();
+      next.pathname = "/staff/login";
+      next.searchParams.set("error", "not_staff");
+      return NextResponse.redirect(next);
+    }
+  }
+
+  if (pathname === "/staff/login" && user) {
+    const { data: kindRow } = await supabase.rpc("my_account_kind");
+    if (kindRow === "staff") {
+      const next = request.nextUrl.clone();
+      next.pathname = "/staff";
+      next.search = "";
+      return NextResponse.redirect(next);
+    }
+  }
+
   return supabaseResponse;
 }
 
 export const config = {
-  matcher: ["/portal/:path*", "/login", "/admin/:path*"],
+  matcher: ["/portal/:path*", "/login", "/admin/:path*", "/staff/:path*"],
 };

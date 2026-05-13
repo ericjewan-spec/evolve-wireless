@@ -35,6 +35,8 @@ type Employee = {
   notes: string | null;
   bank_name: string | null;
   bank_account: string | null;
+  auth_user_id: string | null;
+  portal_enabled: boolean;
   created_at: string;
   updated_at: string;
 };
@@ -51,6 +53,21 @@ type EmployeeDocument = {
   notes: string | null;
   uploaded_by: string | null;
   uploaded_at: string;
+};
+
+type LeaveRequestRow = {
+  id: string;
+  employee_id: string;
+  leave_type: "vacation" | "sick" | "unpaid" | "bereavement" | "other";
+  start_date: string;
+  end_date: string;
+  days_count: number;
+  reason: string | null;
+  status: "pending" | "approved" | "declined" | "cancelled";
+  decision_notes: string | null;
+  approved_at: string | null;
+  submitted_by_employee: boolean;
+  created_at: string;
 };
 
 type AuditEntry = {
@@ -101,7 +118,7 @@ const fmtBytes = (n: number | null) => {
   return `${(n / 1024 / 1024).toFixed(1)} MB`;
 };
 
-type Tab = "profile" | "documents" | "history";
+type Tab = "profile" | "documents" | "history" | "portal";
 
 export default function EmployeeDetailPage() {
   const params = useParams();
@@ -112,6 +129,7 @@ export default function EmployeeDetailPage() {
   const [tab, setTab] = useState<Tab>("profile");
   const [docs, setDocs] = useState<EmployeeDocument[]>([]);
   const [audit, setAudit] = useState<AuditEntry[]>([]);
+  const [leaves, setLeaves] = useState<LeaveRequestRow[]>([]);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<Partial<Employee>>({});
   const [saving, setSaving] = useState(false);
@@ -121,14 +139,16 @@ export default function EmployeeDetailPage() {
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
-    const [empRes, docsRes, auditRes] = await Promise.all([
+    const [empRes, docsRes, auditRes, leaveRes] = await Promise.all([
       supabase.from("employees").select("*").eq("id", id).maybeSingle(),
       supabase.from("employee_documents").select("*").eq("employee_id", id).order("uploaded_at", { ascending: false }),
       supabase.from("employee_audit_log").select("*").eq("employee_id", id).order("created_at", { ascending: false }).limit(200),
+      supabase.from("leave_requests").select("*").eq("employee_id", id).order("created_at", { ascending: false }),
     ]);
     setEmployee(empRes.data as Employee | null);
     setDocs((docsRes.data as EmployeeDocument[]) || []);
     setAudit((auditRes.data as AuditEntry[]) || []);
+    setLeaves((leaveRes.data as LeaveRequestRow[]) || []);
     setLoading(false);
   }, [id, supabase]);
 
@@ -281,7 +301,7 @@ export default function EmployeeDetailPage() {
 
       {/* Tabs */}
       <div style={{ display: "flex", gap: 4, borderBottom: "1px solid #1e1a17", marginBottom: 24 }}>
-        {(["profile", "documents", "history"] as Tab[]).map((t) => (
+        {(["profile", "documents", "history", "portal"] as Tab[]).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -298,7 +318,10 @@ export default function EmployeeDetailPage() {
               marginBottom: -1,
             }}
           >
-            {t === "profile" ? "Profile" : t === "documents" ? `Documents (${docs.length})` : `History (${audit.length})`}
+            {t === "profile" ? "Profile"
+              : t === "documents" ? `Documents (${docs.length})`
+              : t === "history" ? `History (${audit.length})`
+              : `Portal & Leave${leaves.filter(l => l.status === "pending").length ? ` (${leaves.filter(l => l.status === "pending").length})` : ""}`}
           </button>
         ))}
       </div>
@@ -337,6 +360,14 @@ export default function EmployeeDetailPage() {
       )}
 
       {tab === "history" && <HistoryPanel audit={audit} />}
+
+      {tab === "portal" && (
+        <PortalPanel
+          employee={employee}
+          leaves={leaves}
+          onChange={fetchAll}
+        />
+      )}
     </div>
   );
 }
@@ -949,3 +980,250 @@ const btnDanger = (): React.CSSProperties => ({
   cursor: "pointer",
   fontFamily: "inherit",
 });
+
+/* ============================================================
+   PORTAL & LEAVE PANEL
+   ============================================================ */
+function PortalPanel({ employee, leaves, onChange }: {
+  employee: Employee;
+  leaves: LeaveRequestRow[];
+  onChange: () => void;
+}) {
+  const [showCreate, setShowCreate] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const supabase = createClient();
+
+  async function createLogin() {
+    setError("");
+    if (newPassword.length < 10) {
+      setError("Password must be at least 10 characters.");
+      return;
+    }
+    setBusy(true);
+    const { error: e } = await supabase.rpc("create_staff_login", {
+      p_employee_id: employee.id,
+      p_password: newPassword,
+    });
+    if (e) { setError(e.message); setBusy(false); return; }
+    await logAudit({
+      employee_id: employee.id,
+      action: "updated",
+      field_name: "portal_enabled",
+      old_value: "false",
+      new_value: "true",
+      metadata: { description: "Staff portal login created" },
+    });
+    setNewPassword("");
+    setShowCreate(false);
+    setBusy(false);
+    onChange();
+  }
+
+  async function sendReset() {
+    if (!employee.email) { alert("Employee has no email address."); return; }
+    if (!confirm(`Send a password reset email to ${employee.first_name} at ${employee.email}? The link expires in 1 hour.`)) return;
+    const { error: e } = await supabase.auth.resetPasswordForEmail(employee.email, {
+      redirectTo: `${window.location.origin}/staff/reset-password`,
+    });
+    if (e) { alert(`Could not send reset: ${e.message}`); return; }
+    alert(`Reset email sent to ${employee.email}.`);
+  }
+
+  async function disableLogin() {
+    if (!confirm(`Disable the staff portal login for ${employee.first_name} ${employee.last_name}?\n\nThey won't be able to sign in until you re-enable it. Their data (leave requests, attendance, etc.) is preserved.`)) return;
+    setBusy(true);
+    const { error: e } = await supabase.rpc("disable_staff_login", { p_employee_id: employee.id });
+    if (e) { alert(e.message); setBusy(false); return; }
+    await logAudit({
+      employee_id: employee.id,
+      action: "updated",
+      field_name: "portal_enabled",
+      old_value: "true",
+      new_value: "false",
+      metadata: { description: "Staff portal login disabled" },
+    });
+    setBusy(false);
+    onChange();
+  }
+
+  async function decideLeave(req: LeaveRequestRow, decision: "approved" | "declined") {
+    const notes = prompt(
+      `${decision === "approved" ? "Approve" : "Decline"} ${employee.first_name}'s ${req.leave_type} leave for ${req.days_count} day${req.days_count === 1 ? "" : "s"} (${req.start_date} → ${req.end_date})?\n\nOptional note for the employee:`,
+      ""
+    );
+    if (notes === null) return; // cancelled prompt
+
+    const { data: { user } } = await supabase.auth.getUser();
+    const { error: e } = await supabase.from("leave_requests")
+      .update({
+        status: decision,
+        decision_notes: notes || null,
+        approved_at: new Date().toISOString(),
+        approved_by_id: user?.id ?? null,
+      })
+      .eq("id", req.id);
+    if (e) { alert(e.message); return; }
+
+    await logAudit({
+      employee_id: employee.id,
+      action: "updated",
+      field_name: `leave_request:${req.id}`,
+      old_value: req.status,
+      new_value: decision,
+      metadata: {
+        leave_type: req.leave_type,
+        days_count: req.days_count,
+        start_date: req.start_date,
+        end_date: req.end_date,
+        decision_notes: notes || null,
+      },
+    });
+
+    onChange();
+  }
+
+  const pending = leaves.filter(l => l.status === "pending");
+  const past = leaves.filter(l => l.status !== "pending");
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
+      {/* Portal login section */}
+      <div style={{ background: "#141210", border: "1px solid #1e1a17", borderRadius: 12, padding: 22 }}>
+        <div style={{ fontSize: 11, color: "#D4654A", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 14 }}>
+          Staff portal login
+        </div>
+
+        {error && (
+          <div style={{ padding: 10, background: "rgba(255,107,94,0.08)", color: "#ff8a7a", borderRadius: 6, marginBottom: 14, fontSize: 13 }}>
+            {error}
+          </div>
+        )}
+
+        {!employee.auth_user_id ? (
+          <>
+            <p style={{ color: "#8B7355", fontSize: 14, margin: "0 0 14px 0" }}>
+              {employee.first_name} doesn&apos;t have portal access yet. Set an initial password — they&apos;ll sign in at <code style={{ color: "#E9B44C" }}>/staff/login</code> with their email and this password, and can change it themselves.
+            </p>
+            {!employee.email ? (
+              <div style={{ padding: 10, background: "rgba(233,180,76,0.08)", color: "#E9B44C", borderRadius: 6, fontSize: 13 }}>
+                Set an email address for this employee first (in the Profile tab).
+              </div>
+            ) : !showCreate ? (
+              <button onClick={() => setShowCreate(true)} style={btnPrimary()}>Create staff login</button>
+            ) : (
+              <div>
+                <div style={{ fontSize: 12, color: "#8B7355", marginBottom: 8 }}>
+                  They&apos;ll sign in with: <strong style={{ color: "#F5F0EB" }}>{employee.email}</strong>
+                </div>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  <input
+                    type="text"
+                    autoFocus
+                    placeholder="Initial password (10+ characters)"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    style={{ ...inputStyle(), flex: 1, minWidth: 240 }}
+                  />
+                  <button onClick={createLogin} disabled={busy} style={btnPrimary()}>
+                    {busy ? "Creating…" : "Create"}
+                  </button>
+                  <button onClick={() => { setShowCreate(false); setError(""); setNewPassword(""); }} style={btnSecondary()}>Cancel</button>
+                </div>
+              </div>
+            )}
+          </>
+        ) : (
+          <>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14, flexWrap: "wrap" }}>
+              <span style={{
+                padding: "3px 10px", borderRadius: 100, fontSize: 11, fontWeight: 700,
+                background: employee.portal_enabled ? "rgba(76,175,80,0.12)" : "rgba(139,115,85,0.12)",
+                color: employee.portal_enabled ? "#4CAF50" : "#8B7355",
+                textTransform: "uppercase", letterSpacing: "0.06em",
+              }}>{employee.portal_enabled ? "Portal access active" : "Portal access disabled"}</span>
+              <span style={{ color: "#8B7355", fontSize: 13 }}>Signs in as {employee.email}</span>
+            </div>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <button onClick={sendReset} style={btnSecondary()}>Send password reset email</button>
+              {employee.portal_enabled && (
+                <button onClick={disableLogin} disabled={busy} style={{ ...btnSecondary(), color: "#ff8a7a", borderColor: "rgba(255,107,94,0.3)" }}>
+                  Disable portal access
+                </button>
+              )}
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Pending leave requests */}
+      <div style={{ background: "#141210", border: "1px solid #1e1a17", borderRadius: 12, padding: 22 }}>
+        <div style={{ fontSize: 11, color: "#D4654A", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 14 }}>
+          Pending leave requests ({pending.length})
+        </div>
+        {pending.length === 0 ? (
+          <div style={{ color: "#8B7355", fontSize: 13 }}>No pending requests. Approved leave automatically decrements the relevant balance.</div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {pending.map((req) => (
+              <div key={req.id} style={{
+                display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12,
+                padding: 14, background: "#0C0A09", border: "1px solid #2a2420", borderRadius: 10,
+              }}>
+                <div style={{ flex: 1, minWidth: 220 }}>
+                  <div style={{ fontWeight: 700, color: "#F5F0EB", textTransform: "capitalize" }}>
+                    {req.leave_type} · {req.days_count} day{req.days_count === 1 ? "" : "s"}
+                  </div>
+                  <div style={{ color: "#8B7355", fontSize: 13, marginTop: 4 }}>
+                    {fmtDate(req.start_date)} – {fmtDate(req.end_date)} · requested {fmtDateTime(req.created_at)}
+                  </div>
+                  {req.reason && <div style={{ color: "#7A7068", fontSize: 12, marginTop: 4 }}>{req.reason}</div>}
+                </div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button onClick={() => decideLeave(req, "declined")} style={{ ...btnSecondary(), color: "#ff8a7a", borderColor: "rgba(255,107,94,0.3)" }}>Decline</button>
+                  <button onClick={() => decideLeave(req, "approved")} style={btnPrimary()}>Approve</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Past leave requests */}
+      <div style={{ background: "#141210", border: "1px solid #1e1a17", borderRadius: 12, padding: 22 }}>
+        <div style={{ fontSize: 11, color: "#D4654A", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 14 }}>
+          Leave history ({past.length})
+        </div>
+        {past.length === 0 ? (
+          <div style={{ color: "#8B7355", fontSize: 13 }}>No past leave requests.</div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {past.map((req) => (
+              <div key={req.id} style={{
+                display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10,
+                padding: "10px 14px", background: "#0C0A09", borderRadius: 8, fontSize: 13,
+              }}>
+                <div>
+                  <span style={{ color: "#F5F0EB", fontWeight: 600, textTransform: "capitalize" }}>{req.leave_type}</span>
+                  <span style={{ color: "#8B7355", marginLeft: 10 }}>
+                    {fmtDate(req.start_date)} – {fmtDate(req.end_date)} · {req.days_count}d
+                  </span>
+                </div>
+                <span style={{
+                  padding: "2px 8px", borderRadius: 100, fontSize: 10, fontWeight: 700,
+                  textTransform: "uppercase", letterSpacing: "0.06em",
+                  background: req.status === "approved" ? "rgba(76,175,80,0.12)" :
+                              req.status === "declined" ? "rgba(255,107,94,0.12)" :
+                              "rgba(139,115,85,0.12)",
+                  color: req.status === "approved" ? "#4CAF50" :
+                         req.status === "declined" ? "#ff8a7a" : "#8B7355",
+                }}>{req.status}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
