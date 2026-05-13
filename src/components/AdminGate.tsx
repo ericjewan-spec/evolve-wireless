@@ -46,6 +46,7 @@ export function AdminGate({ children }: { children: React.ReactNode }) {
     { href: "/admin/leave", label: "Leave" },
     { href: "/admin/holidays", label: "Holidays" },
     { href: "/admin/onboarding", label: "Onboarding" },
+    { href: "/admin/settings", label: "Settings", ownerOnly: true },
     { href: "/admin/admins", label: "Admins", ownerOnly: true },
   ];
 
