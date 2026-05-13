@@ -85,7 +85,7 @@ export async function middleware(request: NextRequest) {
       .maybeSingle();
     if (admin && admin.active) {
       const next = request.nextUrl.clone();
-      next.pathname = "/admin/payroll";
+      next.pathname = "/admin";
       next.search = "";
       return NextResponse.redirect(next);
     }

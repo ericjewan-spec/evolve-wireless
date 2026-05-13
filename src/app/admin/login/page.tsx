@@ -11,7 +11,7 @@ type Mode = "signin" | "forgot";
 function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
-  const next = params.get("next") || "/admin/payroll";
+  const next = params.get("next") || "/admin";
   const initialError = params.get("error") === "not_authorized"
     ? "Your account is not authorised for admin access."
     : "";

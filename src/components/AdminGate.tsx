@@ -41,6 +41,7 @@ export function AdminGate({ children }: { children: React.ReactNode }) {
   }
 
   const navItems: Array<{ href: string; label: string; ownerOnly?: boolean }> = [
+    { href: "/admin", label: "Dashboard" },
     { href: "/admin/payroll", label: "Payroll" },
     { href: "/admin/leave", label: "Leave" },
     { href: "/admin/holidays", label: "Holidays" },
@@ -80,7 +81,11 @@ export function AdminGate({ children }: { children: React.ReactNode }) {
               {navItems
                 .filter((it) => !it.ownerOnly || admin.role === "owner")
                 .map((it) => {
-                  const active = pathname?.startsWith(it.href);
+                  // /admin matches only the exact dashboard path. All other items
+                  // use startsWith so e.g. /admin/payroll/runs still highlights "Payroll".
+                  const active = it.href === "/admin"
+                    ? pathname === "/admin"
+                    : pathname?.startsWith(it.href);
                   return (
                     <Link
                       key={it.href}
