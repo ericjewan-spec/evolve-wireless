@@ -1922,6 +1922,7 @@ const STATUS_COLOR: Record<OnboardingItem["status"], string> = {
 function OnboardingPanel({ employeeId, firstName }: { employeeId: string; firstName: string }) {
   const supabase = createClient();
   const [items, setItems] = useState<OnboardingItem[]>([]);
+  const [templateCount, setTemplateCount] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
@@ -1929,12 +1930,19 @@ function OnboardingPanel({ employeeId, firstName }: { employeeId: string; firstN
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
-    const { data } = await supabase
-      .from("employee_onboarding_items")
-      .select("*")
-      .eq("employee_id", employeeId)
-      .order("ord", { ascending: true });
-    setItems((data as OnboardingItem[]) || []);
+    const [{ data: itemRows }, { count: tplCount }] = await Promise.all([
+      supabase
+        .from("employee_onboarding_items")
+        .select("*")
+        .eq("employee_id", employeeId)
+        .order("ord", { ascending: true }),
+      supabase
+        .from("onboarding_template_items")
+        .select("id, onboarding_templates!inner(is_default)", { count: "exact", head: true })
+        .eq("onboarding_templates.is_default", true),
+    ]);
+    setTemplateCount(tplCount ?? null);
+    setItems((itemRows as OnboardingItem[]) || []);
     setLoading(false);
   }, [supabase, employeeId]);
 
@@ -1994,7 +2002,7 @@ function OnboardingPanel({ employeeId, firstName }: { employeeId: string; firstN
             {firstName} doesn&apos;t have an onboarding checklist yet.
           </p>
           <p style={{ margin: "0 0 20px 0", fontSize: 13, color: "#8B7355", maxWidth: 460, marginLeft: "auto", marginRight: "auto" }}>
-            Initialize from the default template (currently {/* count */}items across documents, accounts, equipment, and training). You can customize per-hire after.
+            Initialize from the default template{templateCount !== null ? ` (${templateCount} items` : " ("}across documents, accounts, equipment, and training{templateCount !== null ? ")" : ")"}. You can customize per-hire after.
           </p>
           <button onClick={initialize} disabled={busy} style={btnP}>
             {busy ? "Initializing…" : "Initialize onboarding"}
