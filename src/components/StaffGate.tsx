@@ -35,6 +35,13 @@ export function StaffGate({ children }: { children: React.ReactNode }) {
     router.refresh();
   }
 
+  // Public staff paths don't need the gate or chrome — they render their own full-page UI.
+  // (Server-side, the middleware also allows these without an active session.)
+  const isPublicPath = pathname === "/staff/login" || pathname === "/staff/reset-password";
+  if (isPublicPath) {
+    return <>{children}</>;
+  }
+
   if (loading) {
     return <div style={{ minHeight: "100vh", background: "#0C0A09" }} />;
   }
