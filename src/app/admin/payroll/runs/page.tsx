@@ -16,6 +16,7 @@ type Run = {
   total_nis_employee: number | null;
   total_paye: number | null;
   total_net: number | null;
+  is_manual: boolean | null;
   calculated_at: string | null;
   paid_at: string | null;
   created_at: string;
@@ -69,7 +70,6 @@ export default function PayrollRunsPage() {
 
   useEffect(() => { fetchRuns(); }, [fetchRuns]);
 
-  // Default new run = current calendar month
   const today = new Date();
   const firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().slice(0, 10);
   const lastOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString().slice(0, 10);
@@ -81,6 +81,7 @@ export default function PayrollRunsPage() {
     pay_cycle: "monthly" as "monthly" | "fortnightly",
     pay_date: "",
     period_label: defaultLabel,
+    is_manual: false,
   });
 
   async function createRun() {
@@ -99,7 +100,6 @@ export default function PayrollRunsPage() {
     setBusy(false);
     if (e) { setError(e.message); return; }
     setShowCreate(false);
-    // Open the new run directly
     if (data?.id) window.location.href = `/admin/payroll/runs/${data.id}`;
   }
 
@@ -123,6 +123,11 @@ export default function PayrollRunsPage() {
         </div>
         {!showCreate && (
           <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+            <Link href="/admin/payroll/nis" style={{
+              padding: "10px 16px", background: "transparent", color: "#D4654A",
+              border: "1px solid #2a2420", borderRadius: 10, fontWeight: 600,
+              fontSize: 13, textDecoration: "none",
+            }}>NIS schedules</Link>
             <Link href="/admin/payroll/year-end" style={{
               padding: "10px 16px", background: "transparent", color: "#E9B44C",
               border: "1px solid #2a2420", borderRadius: 10, fontWeight: 600,
@@ -173,6 +178,32 @@ export default function PayrollRunsPage() {
               <input type="date" value={draft.pay_date} onChange={(e) => setDraft({ ...draft, pay_date: e.target.value })} placeholder={draft.period_end} style={inputStyle} />
             </Field>
           </div>
+
+          <label style={{
+            display: "flex", alignItems: "flex-start", gap: 10, marginTop: 18,
+            padding: 14, borderRadius: 8,
+            background: draft.is_manual ? "rgba(212,101,74,0.08)" : "transparent",
+            border: `1px solid ${draft.is_manual ? "rgba(212,101,74,0.3)" : "#2a2420"}`,
+            cursor: "pointer",
+          }}>
+            <input
+              type="checkbox"
+              checked={draft.is_manual}
+              onChange={(e) => setDraft({ ...draft, is_manual: e.target.checked })}
+              style={{ width: 16, height: 16, marginTop: 2, accentColor: "#D4654A" }}
+            />
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#F5F0EB" }}>
+                Manual run — don&apos;t use attendance
+              </div>
+              <div style={{ fontSize: 12, color: "#8B7355", marginTop: 3, lineHeight: 1.5 }}>
+                Seeds an empty line for every active {draft.pay_cycle} employee. You type each
+                person&apos;s gross by hand on the next screen — no clock-ins required. NIS &amp; PAYE
+                still calculate on what you type (toggle &quot;exact&quot; per person for one-off payments).
+              </div>
+            </div>
+          </label>
+
           <div style={{ display: "flex", gap: 10, marginTop: 18, justifyContent: "flex-end" }}>
             <button onClick={() => { setShowCreate(false); setError(""); }} style={btnSecondary}>Cancel</button>
             <button onClick={createRun} disabled={busy} style={btnPrimary}>{busy ? "Creating…" : "Create run"}</button>
@@ -200,12 +231,19 @@ export default function PayrollRunsPage() {
                 cursor: "pointer",
                 transition: "border-color 0.15s",
               }}
-              onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.borderColor = "#2a2420"; }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.borderColor = "#1e1a17"; }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.borderColor = "#2a2420"; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.borderColor = "#1e1a17"; }}
               >
                 <div>
                   <div style={{ fontWeight: 700, fontSize: 14, color: "#F5F0EB" }}>
                     {r.period_label || `${fmtDate(r.period_start)} → ${fmtDate(r.period_end)}`}
+                    {r.is_manual && (
+                      <span style={{
+                        marginLeft: 8, fontSize: 9, fontWeight: 700, letterSpacing: "0.06em",
+                        color: "#E9B44C", background: "rgba(233,180,76,0.12)",
+                        padding: "2px 7px", borderRadius: 100, verticalAlign: "middle",
+                      }}>MANUAL</span>
+                    )}
                   </div>
                   <div style={{ color: "#8B7355", fontSize: 12, marginTop: 2 }}>
                     {r.pay_cycle} · pay date {fmtDate(r.pay_date)}
