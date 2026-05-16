@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { createClient } from "@/lib/supabase-browser";
 import { logAudit } from "@/lib/audit";
 
@@ -14,6 +14,7 @@ type Run = {
   pay_cycle: string;
   pay_date: string | null;
   status: "draft" | "calculated" | "paid" | "cancelled";
+  is_manual: boolean | null;
   calculated_at: string | null;
   paid_at: string | null;
   total_gross: number | null;
@@ -21,6 +22,7 @@ type Run = {
   total_nis_employer: number | null;
   total_paye: number | null;
   total_other_deductions: number | null;
+  total_travel_allowance: number | null;
   total_net: number | null;
   notes: string | null;
   settings_id: string | null;
@@ -34,6 +36,9 @@ type Item = {
   days_worked: number;
   days_absent: number;
   gross_pay: number;
+  manual_gross: number | null;
+  exact_payment: boolean;
+  travel_allowance: number;
   nis_deduction: number;
   paye_deduction: number;
   other_deductions: number;
@@ -51,6 +56,8 @@ type Item = {
   employees?: { first_name: string; last_name: string; email: string | null; pay_type: string; pay_rate: number; pay_cycle: string };
 };
 
+const DEFAULT_TRAVEL = 10000;
+
 const fmt = (n: number | null | undefined) =>
   n == null ? "—" : Math.round(Number(n)).toLocaleString("en-GY");
 const fmtGyd = (n: number | null | undefined) =>
@@ -60,7 +67,6 @@ const fmtDate = (d: string | null) =>
 
 export default function PayrollRunDetailPage() {
   const params = useParams();
-  const router = useRouter();
   const id = params.id as string;
 
   const [run, setRun] = useState<Run | null>(null);
@@ -69,6 +75,8 @@ export default function PayrollRunDetailPage() {
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
+  // local edits keyed by item id: { gross, travel, exact }
+  const [edits, setEdits] = useState<Record<string, { gross: string; travel: string; exact: boolean }>>({});
 
   const supabase = createClient();
 
@@ -83,24 +91,67 @@ export default function PayrollRunDetailPage() {
         .order("created_at", { ascending: true }),
     ]);
     setRun(runRes.data as Run | null);
-    setItems((itemsRes.data as Item[]) || []);
+    const its = (itemsRes.data as Item[]) || [];
+    setItems(its);
+    const seed: Record<string, { gross: string; travel: string; exact: boolean }> = {};
+    for (const it of its) {
+      seed[it.id] = {
+        gross: String(Math.round(Number(it.manual_gross ?? it.gross_pay ?? 0))),
+        travel: String(Math.round(Number(it.travel_allowance ?? 0))),
+        exact: !!it.exact_payment,
+      };
+    }
+    setEdits(seed);
     setLoading(false);
   }, [id, supabase]);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
+  const isPaid = run?.status === "paid";
+  const isCalc = run?.status === "calculated";
+  const isManual = !!run?.is_manual;
+
+  function setEdit(itemId: string, patch: Partial<{ gross: string; travel: string; exact: boolean }>) {
+    setEdits((prev) => ({ ...prev, [itemId]: { ...prev[itemId], ...patch } }));
+  }
 
   async function regenerate() {
-    if (!confirm("Regenerate payroll items from attendance? Any manual edits to gross pay will be overwritten.")) return;
+    const msg = isManual
+      ? "Seed an empty line for every active employee on this manual run? Existing typed amounts are kept."
+      : "Regenerate payroll items from attendance? Any manual edits to gross pay will be overwritten.";
+    if (!confirm(msg)) return;
     setError(""); setInfo(""); setBusy("regenerate");
     const { error: e, data } = await supabase.rpc("generate_payroll_items_for_run", { p_run_id: id });
     setBusy(null);
     if (e) { setError(e.message); return; }
-    setInfo(`Generated ${data ?? 0} payroll items.`);
+    setInfo(`Generated ${data ?? 0} payroll lines.`);
     await fetchAll();
+  }
+
+  // Persist all per-line edits (manual gross / travel / exact) before calculating
+  async function saveEdits(): Promise<boolean> {
+    for (const it of items) {
+      const ed = edits[it.id];
+      if (!ed) continue;
+      const grossNum = Math.max(0, Math.round(Number(ed.gross) || 0));
+      const travelNum = Math.max(0, Math.round(Number(ed.travel) || 0));
+      const { error: e } = await supabase
+        .from("payroll_items")
+        .update({
+          manual_gross: grossNum,
+          gross_pay: grossNum,
+          travel_allowance: travelNum,
+          exact_payment: ed.exact,
+        })
+        .eq("id", it.id);
+      if (e) { setError(`Saving ${it.first_name_snapshot || ""}: ${e.message}`); return false; }
+    }
+    return true;
   }
 
   async function calculate() {
     setError(""); setInfo(""); setBusy("calculate");
+    const ok = await saveEdits();
+    if (!ok) { setBusy(null); return; }
     const { error: e } = await supabase.rpc("calculate_payroll_for_run", { p_run_id: id });
     setBusy(null);
     if (e) { setError(e.message); return; }
@@ -110,26 +161,17 @@ export default function PayrollRunDetailPage() {
 
   async function sendOne(itemId: string, sendEmail: boolean) {
     setError(""); setInfo(""); setBusy(`send:${itemId}`);
-    // Get the user's JWT to pass to the edge function
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) { setError("Not signed in"); setBusy(null); return; }
-
     const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/generate-payslip`;
     try {
       const res = await fetch(url, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${session.access_token}`,
-        },
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${session.access_token}` },
         body: JSON.stringify({ payroll_item_id: itemId, send_email: sendEmail }),
       });
       const json = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setError(`Payslip generation failed: ${json?.error || res.statusText}`);
-        setBusy(null);
-        return;
-      }
+      if (!res.ok) { setError(`Payslip generation failed: ${json?.error || res.statusText}`); setBusy(null); return; }
       setInfo(sendEmail ? `Payslip sent to ${json.emailed_to || "employee"}` : "Payslip PDF generated.");
     } catch (e) {
       setError(`Network error: ${(e as Error).message}`);
@@ -141,24 +183,20 @@ export default function PayrollRunDetailPage() {
   async function sendAll() {
     if (!confirm("Generate and email a payslip to every employee in this run?")) return;
     setError(""); setInfo(""); setBusy("sendAll");
-    for (const it of items) {
-      await sendOne(it.id, true);
-    }
+    for (const it of items) { await sendOne(it.id, true); }
     setBusy(null);
     setInfo("Done — all payslips emailed.");
   }
 
   async function downloadPdf(it: Item) {
     if (!it.pdf_path) return;
-    const { data, error: e } = await supabase.storage
-      .from("payslips")
-      .createSignedUrl(it.pdf_path, 60);
+    const { data, error: e } = await supabase.storage.from("payslips").createSignedUrl(it.pdf_path, 60);
     if (e || !data?.signedUrl) { alert("Could not get download link: " + (e?.message || "no url")); return; }
     window.open(data.signedUrl, "_blank");
   }
 
   async function lockRun() {
-    if (!confirm("Lock this run as PAID? No further changes allowed — payslips already sent stay valid.")) return;
+    if (!confirm("Lock this run as PAID? No further changes allowed.")) return;
     setError(""); setInfo(""); setBusy("lock");
     const { error: e } = await supabase.rpc("lock_payroll_run", { p_run_id: id });
     setBusy(null);
@@ -178,11 +216,10 @@ export default function PayrollRunDetailPage() {
   if (loading) return <div style={{ paddingTop: 80, textAlign: "center", color: "#8B7355" }}>Loading…</div>;
   if (!run) return <div style={{ paddingTop: 80, textAlign: "center", color: "#8B7355" }}>Run not found.</div>;
 
-  const isPaid = run.status === "paid";
-  const isCalc = run.status === "calculated";
+  const editable = !isPaid && !isCalc;
 
   return (
-    <div style={{ maxWidth: 1200, margin: "0 auto", padding: "32px 24px 80px" }}>
+    <div style={{ maxWidth: 1280, margin: "0 auto", padding: "32px 24px 80px" }}>
       <Link href="/admin/payroll/runs" style={{ color: "#D4654A", fontSize: 13, textDecoration: "none" }}>
         ← All payroll runs
       </Link>
@@ -191,6 +228,9 @@ export default function PayrollRunDetailPage() {
         <div>
           <h1 style={{ fontSize: 28, fontWeight: 800, margin: "8px 0 4px 0", letterSpacing: "-0.01em", color: "#F5F0EB" }}>
             {run.period_label || `${fmtDate(run.period_start)} → ${fmtDate(run.period_end)}`}
+            {isManual && (
+              <span style={{ marginLeft: 10, fontSize: 11, fontWeight: 700, letterSpacing: "0.06em", color: "#E9B44C", background: "rgba(233,180,76,0.12)", padding: "3px 9px", borderRadius: 100, verticalAlign: "middle" }}>MANUAL</span>
+            )}
           </h1>
           <p style={{ color: "#8B7355", margin: 0, fontSize: 14 }}>
             {run.pay_cycle} · pay date <strong style={{ color: "#F5F0EB" }}>{fmtDate(run.pay_date)}</strong>
@@ -201,19 +241,24 @@ export default function PayrollRunDetailPage() {
         <StatusBadge status={run.status} />
       </div>
 
+      {isManual && editable && (
+        <div style={{ padding: 14, background: "rgba(233,180,76,0.06)", border: "1px solid rgba(233,180,76,0.25)", borderRadius: 10, marginBottom: 18, fontSize: 13, color: "#E9B44C", lineHeight: 1.6 }}>
+          <strong>Manual run.</strong> Type each person&apos;s gross below. By default these are paid <strong>exactly as typed with no NIS/PAYE</strong> (one-off payments). Untick &quot;exact&quot; on any line that is a normal wage and NIS/PAYE will be calculated for that person. Tick <strong>Travel</strong> to add a non-taxable allowance (GYD {DEFAULT_TRAVEL.toLocaleString("en-GY")} default, editable).
+        </div>
+      )}
+
       {error && <Banner kind="error">{error}</Banner>}
       {info && <Banner kind="info">{info}</Banner>}
 
-      {/* Action bar */}
       <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 24 }}>
         {!isPaid && (
           <button onClick={regenerate} disabled={!!busy} style={btn(false)}>
-            {busy === "regenerate" ? "Regenerating…" : "1. Regenerate items from attendance"}
+            {busy === "regenerate" ? "Working…" : isManual ? "1. Seed employee lines" : "1. Regenerate items from attendance"}
           </button>
         )}
         {!isPaid && items.length > 0 && (
           <button onClick={calculate} disabled={!!busy} style={btn(false)}>
-            {busy === "calculate" ? "Calculating…" : "2. Calculate NIS &amp; PAYE"}
+            {busy === "calculate" ? "Saving & calculating…" : "2. Save & calculate"}
           </button>
         )}
         {isCalc && (
@@ -228,21 +273,21 @@ export default function PayrollRunDetailPage() {
         )}
       </div>
 
-      {/* Totals strip (visible when calculated) */}
       {(isCalc || isPaid) && (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12, marginBottom: 28 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 12, marginBottom: 28 }}>
           <Stat label="Gross" value={fmtGyd(run.total_gross)} />
           <Stat label="NIS (employees)" value={fmtGyd(run.total_nis_employee)} tone="warn" />
           <Stat label="NIS (employer)" value={fmtGyd(run.total_nis_employer)} tone="warn" />
           <Stat label="PAYE" value={fmtGyd(run.total_paye)} tone="warn" />
+          <Stat label="Travel (non-tax)" value={fmtGyd(run.total_travel_allowance)} tone="good" />
           <Stat label="Net to pay" value={fmtGyd(run.total_net)} tone="good" />
         </div>
       )}
 
       {items.length === 0 ? (
         <div style={{ padding: 40, textAlign: "center", color: "#8B7355", background: "#141210", border: "1px solid #1e1a17", borderRadius: 12 }}>
-          <p style={{ margin: "0 0 8px 0", color: "#F5F0EB", fontWeight: 700 }}>No payroll items yet.</p>
-          Click <strong style={{ color: "#D4654A" }}>Regenerate items from attendance</strong> above to populate this run.
+          <p style={{ margin: "0 0 8px 0", color: "#F5F0EB", fontWeight: 700 }}>No payroll lines yet.</p>
+          Click <strong style={{ color: "#D4654A" }}>{isManual ? "Seed employee lines" : "Regenerate items from attendance"}</strong> above to populate this run.
         </div>
       ) : (
         <div style={{ overflowX: "auto", border: "1px solid #1e1a17", borderRadius: 12, background: "#141210" }}>
@@ -250,58 +295,107 @@ export default function PayrollRunDetailPage() {
             <thead>
               <tr style={{ background: "#100E0C" }}>
                 <Th>Employee</Th>
-                <Th align="right">Hours/Days</Th>
                 <Th align="right">Gross</Th>
+                <Th>Travel</Th>
+                <Th>NIS/PAYE</Th>
                 <Th align="right">NIS</Th>
-                <Th align="right">Allowance</Th>
-                <Th align="right">Chargeable</Th>
                 <Th align="right">PAYE</Th>
                 <Th align="right">Net</Th>
                 <Th>Payslip</Th>
               </tr>
             </thead>
             <tbody>
-              {items.map((it) => (
-                <tr key={it.id} style={{ borderTop: "1px solid #1e1a17" }}>
-                  <Td>
-                    <div style={{ fontWeight: 700, color: "#F5F0EB" }}>
-                      {(it.first_name_snapshot || it.employees?.first_name)} {(it.last_name_snapshot || it.employees?.last_name)}
-                    </div>
-                    <div style={{ color: "#8B7355", fontSize: 11, marginTop: 1 }}>
-                      {it.employees?.pay_type === "hourly" ? `${fmt(it.employees?.pay_rate)}/hr` : "salaried"}
-                    </div>
-                  </Td>
-                  <Td align="right">
-                    {it.employees?.pay_type === "hourly"
-                      ? <>{fmt(it.regular_hours)} hrs {it.overtime_hours > 0 && <span style={{ color: "#E9B44C" }}>+{fmt(it.overtime_hours)} OT</span>}</>
-                      : <>{it.days_worked} present {it.days_absent > 0 && <span style={{ color: "#ff8a7a" }}>/ {it.days_absent} absent</span>}</>}
-                  </Td>
-                  <Td align="right" mono>{fmt(it.gross_pay)}</Td>
-                  <Td align="right" mono tone="warn">{fmt(it.nis_deduction)}</Td>
-                  <Td align="right" mono tone="dim">{fmt(it.personal_allowance)}</Td>
-                  <Td align="right" mono>{fmt(it.chargeable_income)}</Td>
-                  <Td align="right" mono tone="warn">{fmt(it.paye_deduction)}</Td>
-                  <Td align="right" mono tone="good"><strong>{fmt(it.net_pay)}</strong></Td>
-                  <Td>
-                    {it.pdf_path ? (
-                      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                        <button onClick={() => downloadPdf(it)} style={linkBtn}>↓ PDF</button>
-                        {it.payslip_sent_at ? (
-                          <span style={{ fontSize: 10, color: "#4CAF50" }}>✓ sent {new Date(it.payslip_sent_at).toLocaleDateString("en-GY")}</span>
-                        ) : (
-                          <button onClick={() => sendOne(it.id, true)} disabled={!!busy} style={linkBtn}>email</button>
-                        )}
+              {items.map((it) => {
+                const ed = edits[it.id] || { gross: "0", travel: "0", exact: isManual };
+                const travelOn = Number(ed.travel) > 0;
+                return (
+                  <tr key={it.id} style={{ borderTop: "1px solid #1e1a17" }}>
+                    <Td>
+                      <div style={{ fontWeight: 700, color: "#F5F0EB" }}>
+                        {(it.first_name_snapshot || it.employees?.first_name)} {(it.last_name_snapshot || it.employees?.last_name)}
                       </div>
-                    ) : isCalc ? (
-                      <button onClick={() => sendOne(it.id, true)} disabled={!!busy} style={linkBtn}>
-                        {busy === `send:${it.id}` ? "…" : "Generate &amp; email"}
-                      </button>
-                    ) : (
-                      <span style={{ color: "#7A7068", fontSize: 11 }}>—</span>
-                    )}
-                  </Td>
-                </tr>
-              ))}
+                      <div style={{ color: "#8B7355", fontSize: 11, marginTop: 1 }}>
+                        {it.employees?.pay_type === "hourly" ? `${fmt(it.employees?.pay_rate)}/hr` : "salaried"}
+                        {!isManual && it.days_absent > 0 && <span style={{ color: "#ff8a7a" }}> · {it.days_absent} absent</span>}
+                      </div>
+                    </Td>
+                    <Td align="right">
+                      {editable ? (
+                        <input
+                          type="number"
+                          value={ed.gross}
+                          onChange={(e) => setEdit(it.id, { gross: e.target.value })}
+                          style={cellInput}
+                        />
+                      ) : (
+                        <span style={{ fontVariantNumeric: "tabular-nums", color: "#F5F0EB", fontWeight: 700 }}>{fmt(it.gross_pay)}</span>
+                      )}
+                    </Td>
+                    <Td>
+                      {editable ? (
+                        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                          <input
+                            type="checkbox"
+                            checked={travelOn}
+                            onChange={(e) => setEdit(it.id, { travel: e.target.checked ? String(DEFAULT_TRAVEL) : "0" })}
+                            style={{ width: 15, height: 15, accentColor: "#4CAF50" }}
+                          />
+                          {travelOn && (
+                            <input
+                              type="number"
+                              value={ed.travel}
+                              onChange={(e) => setEdit(it.id, { travel: e.target.value })}
+                              style={{ ...cellInput, width: 90 }}
+                            />
+                          )}
+                        </div>
+                      ) : (
+                        <span style={{ color: it.travel_allowance > 0 ? "#4CAF50" : "#7A7068", fontVariantNumeric: "tabular-nums" }}>
+                          {it.travel_allowance > 0 ? fmt(it.travel_allowance) : "—"}
+                        </span>
+                      )}
+                    </Td>
+                    <Td>
+                      {editable ? (
+                        <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: 11, color: ed.exact ? "#E9B44C" : "#8B7355" }}>
+                          <input
+                            type="checkbox"
+                            checked={!ed.exact}
+                            onChange={(e) => setEdit(it.id, { exact: !e.target.checked })}
+                            style={{ width: 15, height: 15, accentColor: "#D4654A" }}
+                          />
+                          {ed.exact ? "exact (no deductions)" : "deduct NIS+PAYE"}
+                        </label>
+                      ) : (
+                        <span style={{ fontSize: 11, color: it.exact_payment ? "#E9B44C" : "#8B7355" }}>
+                          {it.exact_payment ? "exact" : "NIS+PAYE"}
+                        </span>
+                      )}
+                    </Td>
+                    <Td align="right" mono tone="warn">{fmt(it.nis_deduction)}</Td>
+                    <Td align="right" mono tone="warn">{fmt(it.paye_deduction)}</Td>
+                    <Td align="right" mono tone="good"><strong>{fmt(it.net_pay)}</strong></Td>
+                    <Td>
+                      {it.pdf_path ? (
+                        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                          <button onClick={() => downloadPdf(it)} style={linkBtn}>↓ PDF</button>
+                          {it.payslip_sent_at ? (
+                            <span style={{ fontSize: 10, color: "#4CAF50" }}>✓ sent {new Date(it.payslip_sent_at).toLocaleDateString("en-GY")}</span>
+                          ) : (
+                            <button onClick={() => sendOne(it.id, true)} disabled={!!busy} style={linkBtn}>email</button>
+                          )}
+                        </div>
+                      ) : isCalc ? (
+                        <button onClick={() => sendOne(it.id, true)} disabled={!!busy} style={linkBtn}>
+                          {busy === `send:${it.id}` ? "…" : "Generate & email"}
+                        </button>
+                      ) : (
+                        <span style={{ color: "#7A7068", fontSize: 11 }}>—</span>
+                      )}
+                    </Td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -319,15 +413,7 @@ function StatusBadge({ status }: { status: Run["status"] }) {
   };
   const p = palette[status];
   return (
-    <span style={{
-      padding: "5px 14px",
-      borderRadius: 100,
-      fontSize: 11,
-      fontWeight: 700,
-      letterSpacing: "0.08em",
-      background: p.bg,
-      color: p.fg,
-    }}>{p.label}</span>
+    <span style={{ padding: "5px 14px", borderRadius: 100, fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", background: p.bg, color: p.fg }}>{p.label}</span>
   );
 }
 
@@ -352,33 +438,31 @@ function Stat({ label, value, tone }: { label: string; value: string; tone?: "go
 
 function Th({ children, align }: { children: React.ReactNode; align?: "right" }) {
   return (
-    <th style={{
-      textAlign: align || "left",
-      padding: "12px 14px",
-      color: "#8B7355",
-      fontWeight: 700,
-      fontSize: 10,
-      letterSpacing: "0.06em",
-      textTransform: "uppercase",
-      whiteSpace: "nowrap",
-    }}>{children}</th>
+    <th style={{ textAlign: align || "left", padding: "12px 14px", color: "#8B7355", fontWeight: 700, fontSize: 10, letterSpacing: "0.06em", textTransform: "uppercase", whiteSpace: "nowrap" }}>{children}</th>
   );
 }
 
 function Td({ children, align, mono, tone }: { children: React.ReactNode; align?: "right"; mono?: boolean; tone?: "good" | "warn" | "dim" }) {
   const color = tone === "good" ? "#4CAF50" : tone === "warn" ? "#ff8a7a" : tone === "dim" ? "#8B7355" : "#F5F0EB";
   return (
-    <td style={{
-      padding: "12px 14px",
-      textAlign: align || "left",
-      color,
-      fontFamily: mono ? "ui-monospace, monospace" : undefined,
-      fontVariantNumeric: mono ? "tabular-nums" : undefined,
-      verticalAlign: "top",
-      whiteSpace: "nowrap",
-    }}>{children}</td>
+    <td style={{ padding: "10px 14px", textAlign: align || "left", color, fontFamily: mono ? "ui-monospace, monospace" : undefined, fontVariantNumeric: mono ? "tabular-nums" : undefined, verticalAlign: "middle", whiteSpace: "nowrap" }}>{children}</td>
   );
 }
+
+const cellInput: React.CSSProperties = {
+  width: 110,
+  padding: "7px 9px",
+  borderRadius: 6,
+  border: "1px solid #2a2420",
+  background: "#0C0A09",
+  color: "#F5F0EB",
+  fontSize: 13,
+  fontFamily: "inherit",
+  fontVariantNumeric: "tabular-nums",
+  textAlign: "right",
+  outline: "none",
+  boxSizing: "border-box",
+};
 
 const btn = (primary: boolean): React.CSSProperties => ({
   padding: "10px 18px",
