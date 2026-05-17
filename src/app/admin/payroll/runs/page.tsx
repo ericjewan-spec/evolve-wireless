@@ -71,25 +71,60 @@ export default function PayrollRunsPage() {
   useEffect(() => { fetchRuns(); }, [fetchRuns]);
 
   const today = new Date();
-  const firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().slice(0, 10);
-  const lastOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString().slice(0, 10);
-  const defaultLabel = today.toLocaleDateString("en-GY", { month: "long", year: "numeric" });
+
+  // Build a list of selectable pay months: 3 months back through 9 months ahead.
+  const monthOptions = (() => {
+    const opts: { value: string; label: string; year: number; month: number }[] = [];
+    for (let off = -3; off <= 9; off++) {
+      const d = new Date(today.getFullYear(), today.getMonth() + off, 1);
+      const y = d.getFullYear();
+      const m = d.getMonth(); // 0-indexed
+      opts.push({
+        value: `${y}-${String(m + 1).padStart(2, "0")}`,
+        label: d.toLocaleDateString("en-GY", { month: "long", year: "numeric" }),
+        year: y,
+        month: m,
+      });
+    }
+    return opts;
+  })();
+
+  const defaultMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
 
   const [draft, setDraft] = useState({
-    period_start: firstOfMonth,
-    period_end: lastOfMonth,
+    pay_month: defaultMonth,        // "YYYY-MM" of the pay period
+    pay_day: 25,                    // day of month wages hit accounts (default 25th)
     pay_cycle: "monthly" as "monthly" | "fortnightly",
-    pay_date: "",
-    period_label: defaultLabel,
+    period_label: today.toLocaleDateString("en-GY", { month: "long", year: "numeric" }),
     is_manual: false,
   });
+
+  // Derive period start/end and the actual pay date from the picked month + day.
+  function derivedDates(pay_month: string, pay_day: number) {
+    const [yStr, mStr] = pay_month.split("-");
+    const y = Number(yStr);
+    const m = Number(mStr) - 1; // back to 0-indexed
+    const lastDay = new Date(y, m + 1, 0).getDate();
+    const day = Math.min(Math.max(1, pay_day), lastDay);
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return {
+      period_start: `${y}-${pad(m + 1)}-01`,
+      period_end: `${y}-${pad(m + 1)}-${pad(lastDay)}`,
+      pay_date: `${y}-${pad(m + 1)}-${pad(day)}`,
+    };
+  }
 
   async function createRun() {
     setError("");
     setBusy(true);
+    const d = derivedDates(draft.pay_month, draft.pay_day);
     const payload = {
-      ...draft,
-      pay_date: draft.pay_date || draft.period_end,
+      period_label: draft.period_label,
+      pay_cycle: draft.pay_cycle,
+      is_manual: draft.is_manual,
+      period_start: d.period_start,
+      period_end: d.period_end,
+      pay_date: d.pay_date,
       status: "draft" as const,
     };
     const { error: e, data } = await supabase
@@ -168,16 +203,46 @@ export default function PayrollRunsPage() {
                 <option value="fortnightly">Fortnightly</option>
               </select>
             </Field>
-            <Field label="Period start">
-              <input type="date" value={draft.period_start} onChange={(e) => setDraft({ ...draft, period_start: e.target.value })} style={inputStyle} />
+            <Field label="Pay month (period)">
+              <select
+                value={draft.pay_month}
+                onChange={(e) => {
+                  const opt = monthOptions.find((o) => o.value === e.target.value);
+                  setDraft({
+                    ...draft,
+                    pay_month: e.target.value,
+                    period_label: opt ? opt.label : draft.period_label,
+                  });
+                }}
+                style={inputStyle}
+              >
+                {monthOptions.map((o) => (
+                  <option key={o.value} value={o.value}>{o.label}</option>
+                ))}
+              </select>
             </Field>
-            <Field label="Period end">
-              <input type="date" value={draft.period_end} onChange={(e) => setDraft({ ...draft, period_end: e.target.value })} style={inputStyle} />
-            </Field>
-            <Field label="Pay date (when net pay hits accounts)">
-              <input type="date" value={draft.pay_date} onChange={(e) => setDraft({ ...draft, pay_date: e.target.value })} placeholder={draft.period_end} style={inputStyle} />
+            <Field label="Pay day (when net pay hits accounts)">
+              <select
+                value={draft.pay_day}
+                onChange={(e) => setDraft({ ...draft, pay_day: Number(e.target.value) })}
+                style={inputStyle}
+              >
+                {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
+                  <option key={d} value={d}>
+                    {d}{d === 25 ? "  (default)" : ""}
+                  </option>
+                ))}
+              </select>
             </Field>
           </div>
+
+          <p style={{ color: "#8B7355", fontSize: 12, margin: "12px 2px 0 2px" }}>
+            This run covers <strong style={{ color: "#F5F0EB" }}>
+            {(() => { const d = derivedDates(draft.pay_month, draft.pay_day); return `${fmtDate(d.period_start)} \u2192 ${fmtDate(d.period_end)}`; })()}
+            </strong>, paid on <strong style={{ color: "#F5F0EB" }}>
+            {(() => { const d = derivedDates(draft.pay_month, draft.pay_day); return fmtDate(d.pay_date); })()}
+            </strong>.
+          </p>
 
           <label style={{
             display: "flex", alignItems: "flex-start", gap: 10, marginTop: 18,
