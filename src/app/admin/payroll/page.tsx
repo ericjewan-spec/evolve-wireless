@@ -28,7 +28,7 @@ export default function PayrollDashboard() {
   const [newEmp, setNewEmp] = useState({ first_name: "", last_name: "", phone: "", email: "", role: "Technician", department: "Operations", pay_type: "hourly" as string, pay_rate: "", pay_cycle: "fortnightly" as string, pin_code: "" });
 
   // New attendance form
-  const [newAtt, setNewAtt] = useState({ employee_id: "", date: today(), clock_in: "08:00", clock_out: "17:00", status: "present", notes: "" });
+  const [newAtt, setNewAtt] = useState({ employee_id: "", date: today(), clock_in: "08:00", clock_out: "17:00", status: "present", notes: "", charge_to: "none", charge_days: 1 });
 
   const fetchEmployees = useCallback(async () => {
     const { data } = await supabase.from("employees").select("*").eq("status", "active").order("first_name");
@@ -82,8 +82,32 @@ export default function PayrollDashboard() {
     const clockIn = new Date(`${newAtt.date}T${newAtt.clock_in}:00-04:00`).toISOString();
     const clockOut = new Date(`${newAtt.date}T${newAtt.clock_out}:00-04:00`).toISOString();
     await supabase.from("attendance").insert({ employee_id: newAtt.employee_id, date: newAtt.date, clock_in: clockIn, clock_out: clockOut, status: newAtt.status, notes: newAtt.notes, source: "manual" });
+
+    // Flex an absence against the employee's leave or sick balance, if chosen.
+    if (newAtt.status === "absent" && (newAtt.charge_to === "vacation" || newAtt.charge_to === "sick")) {
+      const emp = employees.find(e => e.id === newAtt.employee_id);
+      if (emp) {
+        const days = Math.max(0, Number(newAtt.charge_days) || 0);
+        const col = newAtt.charge_to === "vacation" ? "leave_balance_vacation" : "leave_balance_sick";
+        const current = newAtt.charge_to === "vacation" ? Number(emp.leave_balance_vacation || 0) : Number(emp.leave_balance_sick || 0);
+        const next = Math.round((current - days) * 100) / 100; // allow going negative so it's visible/owed
+        const { error: balErr } = await supabase.from("employees").update({ [col]: next }).eq("id", emp.id);
+        if (!balErr) {
+          await logAudit({
+            employee_id: emp.id,
+            action: "leave_balance_adjusted",
+            field_name: col,
+            old_value: String(current),
+            new_value: String(next),
+            metadata: { reason: "absence flexed to " + (newAtt.charge_to === "vacation" ? "annual leave" : "sick leave"), date: newAtt.date, days },
+          });
+        }
+      }
+    }
+
+    setNewAtt({ ...newAtt, charge_to: "none", charge_days: 1, notes: "" });
     setShowAddAttendance(false);
-    fetchAttendance();
+    Promise.all([fetchEmployees(), fetchAttendance()]);
   }
 
   // Payroll calculation
@@ -239,6 +263,22 @@ export default function PayrollDashboard() {
                       <option value="present">Present</option><option value="absent">Absent</option><option value="late">Late</option><option value="half_day">Half Day</option><option value="holiday">Holiday</option>
                     </select>
                   </div>
+                  {newAtt.status === "absent" && (
+                    <>
+                      <div><label style={label}>Charge absence to</label>
+                        <select value={newAtt.charge_to} onChange={e => setNewAtt({ ...newAtt, charge_to: e.target.value })} style={input}>
+                          <option value="none">Don&apos;t charge (unpaid absence)</option>
+                          <option value="vacation">Annual leave balance</option>
+                          <option value="sick">Sick leave balance</option>
+                        </select>
+                      </div>
+                      {newAtt.charge_to !== "none" && (
+                        <div><label style={label}>Days to deduct</label>
+                          <input type="number" min={0} step={0.5} value={newAtt.charge_days} onChange={e => setNewAtt({ ...newAtt, charge_days: Number(e.target.value) })} style={input} />
+                        </div>
+                      )}
+                    </>
+                  )}
                   <div><label style={label}>Clock In</label><input type="time" value={newAtt.clock_in} onChange={e => setNewAtt({ ...newAtt, clock_in: e.target.value })} style={input} /></div>
                   <div><label style={label}>Clock Out</label><input type="time" value={newAtt.clock_out} onChange={e => setNewAtt({ ...newAtt, clock_out: e.target.value })} style={input} /></div>
                   <div><label style={label}>Notes</label><input value={newAtt.notes} onChange={e => setNewAtt({ ...newAtt, notes: e.target.value })} style={input} /></div>
