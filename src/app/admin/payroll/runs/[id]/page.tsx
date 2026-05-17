@@ -23,6 +23,7 @@ type Run = {
   total_paye: number | null;
   total_other_deductions: number | null;
   total_travel_allowance: number | null;
+  total_travel_days: number | null;
   total_net: number | null;
   notes: string | null;
   settings_id: string | null;
@@ -39,6 +40,7 @@ type Item = {
   manual_gross: number | null;
   exact_payment: boolean;
   travel_allowance: number;
+  travel_days: number;
   nis_deduction: number;
   paye_deduction: number;
   other_deductions: number;
@@ -56,7 +58,7 @@ type Item = {
   employees?: { first_name: string; last_name: string; email: string | null; pay_type: string; pay_rate: number; pay_cycle: string };
 };
 
-const DEFAULT_TRAVEL = 10000;
+const TRAVEL_DAY_RATE = 10000;
 
 const fmt = (n: number | null | undefined) =>
   n == null ? "—" : Math.round(Number(n)).toLocaleString("en-GY");
@@ -75,8 +77,8 @@ export default function PayrollRunDetailPage() {
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
-  // local edits keyed by item id: { gross, travel, exact }
-  const [edits, setEdits] = useState<Record<string, { gross: string; travel: string; exact: boolean }>>({});
+  // local edits keyed by item id: { gross, travelDays, exact }
+  const [edits, setEdits] = useState<Record<string, { gross: string; travelDays: string; exact: boolean }>>({});
 
   const supabase = createClient();
 
@@ -93,11 +95,11 @@ export default function PayrollRunDetailPage() {
     setRun(runRes.data as Run | null);
     const its = (itemsRes.data as Item[]) || [];
     setItems(its);
-    const seed: Record<string, { gross: string; travel: string; exact: boolean }> = {};
+    const seed: Record<string, { gross: string; travelDays: string; exact: boolean }> = {};
     for (const it of its) {
       seed[it.id] = {
         gross: String(Math.round(Number(it.manual_gross ?? it.gross_pay ?? 0))),
-        travel: String(Math.round(Number(it.travel_allowance ?? 0))),
+        travelDays: String(Math.round(Number(it.travel_days ?? 0))),
         exact: !!it.exact_payment,
       };
     }
@@ -110,7 +112,7 @@ export default function PayrollRunDetailPage() {
   const isCalc = run?.status === "calculated";
   const isManual = !!run?.is_manual;
 
-  function setEdit(itemId: string, patch: Partial<{ gross: string; travel: string; exact: boolean }>) {
+  function setEdit(itemId: string, patch: Partial<{ gross: string; travelDays: string; exact: boolean }>) {
     setEdits((prev) => ({ ...prev, [itemId]: { ...prev[itemId], ...patch } }));
   }
 
@@ -133,13 +135,14 @@ export default function PayrollRunDetailPage() {
       const ed = edits[it.id];
       if (!ed) continue;
       const grossNum = Math.max(0, Math.round(Number(ed.gross) || 0));
-      const travelNum = Math.max(0, Math.round(Number(ed.travel) || 0));
+      const travelDaysNum = Math.max(0, Math.round(Number(ed.travelDays) || 0));
       const { error: e } = await supabase
         .from("payroll_items")
         .update({
           manual_gross: grossNum,
           gross_pay: grossNum,
-          travel_allowance: travelNum,
+          travel_days: travelDaysNum,
+          travel_allowance: travelDaysNum * TRAVEL_DAY_RATE,
           exact_payment: ed.exact,
         })
         .eq("id", it.id);
@@ -243,7 +246,7 @@ export default function PayrollRunDetailPage() {
 
       {isManual && editable && (
         <div style={{ padding: 14, background: "rgba(233,180,76,0.06)", border: "1px solid rgba(233,180,76,0.25)", borderRadius: 10, marginBottom: 18, fontSize: 13, color: "#E9B44C", lineHeight: 1.6 }}>
-          <strong>Manual run.</strong> Type each person&apos;s gross below. By default these are paid <strong>exactly as typed with no NIS/PAYE</strong> (one-off payments). Untick &quot;exact&quot; on any line that is a normal wage and NIS/PAYE will be calculated for that person. Tick <strong>Travel</strong> to add a non-taxable allowance (GYD {DEFAULT_TRAVEL.toLocaleString("en-GY")} default, editable).
+          <strong>Manual run.</strong> Type each person&apos;s gross below. By default these are paid <strong>exactly as typed with no NIS/PAYE</strong> (one-off payments). Untick &quot;exact&quot; on any line that is a normal wage and NIS/PAYE will be calculated for that person. Enter <strong>out-of-town days</strong> to add a non-taxable travel allowance ({fmtGyd(TRAVEL_DAY_RATE)} per day — e.g. 5 days = {fmtGyd(5 * TRAVEL_DAY_RATE)}).
         </div>
       )}
 
@@ -296,7 +299,7 @@ export default function PayrollRunDetailPage() {
               <tr style={{ background: "#100E0C" }}>
                 <Th>Employee</Th>
                 <Th align="right">Gross</Th>
-                <Th>Travel</Th>
+                <Th>Out-of-town days</Th>
                 <Th>NIS/PAYE</Th>
                 <Th align="right">NIS</Th>
                 <Th align="right">PAYE</Th>
@@ -306,8 +309,9 @@ export default function PayrollRunDetailPage() {
             </thead>
             <tbody>
               {items.map((it) => {
-                const ed = edits[it.id] || { gross: "0", travel: "0", exact: isManual };
-                const travelOn = Number(ed.travel) > 0;
+                const ed = edits[it.id] || { gross: "0", travelDays: "0", exact: isManual };
+                const tDays = Math.max(0, Math.round(Number(ed.travelDays) || 0));
+                const tAmount = tDays * TRAVEL_DAY_RATE;
                 return (
                   <tr key={it.id} style={{ borderTop: "1px solid #1e1a17" }}>
                     <Td>
@@ -333,25 +337,22 @@ export default function PayrollRunDetailPage() {
                     </Td>
                     <Td>
                       {editable ? (
-                        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                           <input
-                            type="checkbox"
-                            checked={travelOn}
-                            onChange={(e) => setEdit(it.id, { travel: e.target.checked ? String(DEFAULT_TRAVEL) : "0" })}
-                            style={{ width: 15, height: 15, accentColor: "#4CAF50" }}
+                            type="number"
+                            min={0}
+                            value={ed.travelDays}
+                            onChange={(e) => setEdit(it.id, { travelDays: e.target.value })}
+                            style={{ ...cellInput, width: 64, textAlign: "center" }}
+                            title="Days worked out of town this run"
                           />
-                          {travelOn && (
-                            <input
-                              type="number"
-                              value={ed.travel}
-                              onChange={(e) => setEdit(it.id, { travel: e.target.value })}
-                              style={{ ...cellInput, width: 90 }}
-                            />
-                          )}
+                          <span style={{ fontSize: 11, color: tDays > 0 ? "#4CAF50" : "#7A7068", whiteSpace: "nowrap" }}>
+                            {tDays > 0 ? `× ${fmtGyd(TRAVEL_DAY_RATE)} = ${fmtGyd(tAmount)}` : "days"}
+                          </span>
                         </div>
                       ) : (
                         <span style={{ color: it.travel_allowance > 0 ? "#4CAF50" : "#7A7068", fontVariantNumeric: "tabular-nums" }}>
-                          {it.travel_allowance > 0 ? fmt(it.travel_allowance) : "—"}
+                          {it.travel_days > 0 ? `${it.travel_days}d = ${fmt(it.travel_allowance)}` : "—"}
                         </span>
                       )}
                     </Td>
