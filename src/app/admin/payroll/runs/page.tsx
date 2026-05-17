@@ -25,8 +25,13 @@ type Run = {
 const fmt = (n: number | null | undefined) =>
   n == null ? "—" : `GYD ${Math.round(Number(n)).toLocaleString("en-GY")}`;
 
-const fmtDate = (d: string | null) =>
-  d ? new Date(d).toLocaleDateString("en-GY", { day: "numeric", month: "short", year: "numeric" }) : "—";
+const fmtDate = (d: string | null) => {
+  if (!d) return "—";
+  // Parse YYYY-MM-DD as a LOCAL date (avoid UTC shifting it back a day in Guyana).
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(d);
+  const dt = m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : new Date(d);
+  return dt.toLocaleDateString("en-GY", { day: "numeric", month: "short", year: "numeric" });
+};
 
 function statusBadge(status: Run["status"]) {
   const palette: Record<Run["status"], { bg: string; fg: string; label: string }> = {
