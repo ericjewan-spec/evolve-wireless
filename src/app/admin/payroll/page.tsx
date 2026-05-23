@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase-browser";
 import { logAudit } from "@/lib/audit";
+import AttendanceSummaryPanel from "./AttendanceSummaryPanel";
 
 type Tab = "employees" | "attendance" | "payroll";
 type Employee = { id: string; first_name: string; last_name: string; role: string; department: string; pay_type: string; pay_rate: number; pay_cycle: string; status: string; phone: string; email: string; pin_code: string; leave_balance_vacation: number; leave_balance_sick: number; start_date: string; };
@@ -385,7 +386,7 @@ export default function PayrollDashboard() {
                     </div>
                   </div>
 
-                  {/* Payroll Table */}
+                  <AttendanceSummaryPanel dateFrom={dateFrom} dateTo={dateTo} />
                   <div style={{ overflowX: "auto" }}>
                     <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.85rem" }}>
                       <thead>
