@@ -139,54 +139,8 @@ export default function StaffDocumentsPage() {
         Files HR has shared with you, and a place to submit your own (sick notes, medical certificates, training certs).
       </p>
 
-      <div style={{ background: "#141210", border: "1px solid #2a2420", borderRadius: 12, padding: 22, marginBottom: 28 }}>
-        <h3 style={{ margin: "0 0 4px 0", fontSize: 16, color: "#F5F0EB" }}>Submit a document to HR</h3>
-        <p style={{ margin: "0 0 16px 0", color: "#8B7355", fontSize: 13 }}>
-          Use this for sick notes, medical certificates, or training certificates.
-        </p>
-
-        {uploadError && (
-          <div style={{ padding: 10, background: "rgba(255,107,94,0.08)", color: "#ff8a7a", borderRadius: 6, marginBottom: 14, fontSize: 13 }}>
-            {uploadError}
-          </div>
-        )}
-
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 14 }}>
-          <div>
-            <label style={labelStyle}>Type of document</label>
-            <select value={uploadCat} onChange={(e) => setUploadCat(e.target.value as typeof STAFF_UPLOAD_CATEGORIES[number])} style={inputStyle}>
-              {STAFF_UPLOAD_CATEGORIES.map(cat => (
-                <option key={cat} value={cat}>{CATEGORY_LABELS[cat]}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label style={labelStyle}>Notes (optional)</label>
-            <input
-              value={uploadNotes}
-              onChange={(e) => setUploadNotes(e.target.value)}
-              placeholder="e.g. for 12–14 May, flu"
-              style={inputStyle}
-            />
-          </div>
-        </div>
-
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx"
-          onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileChosen(f); }}
-          disabled={uploading}
-          style={{
-            display: "block", width: "100%", padding: 10,
-            background: "#0C0A09", border: "1px dashed #2a2420", borderRadius: 8,
-            color: "#F5F0EB", cursor: uploading ? "wait" : "pointer", fontFamily: "inherit", fontSize: 13,
-          }}
-        />
-        <p style={{ color: "#7A7068", fontSize: 11, margin: "8px 0 0 0" }}>
-          PDF, image, or Word/Excel. Max 10 MB.
-        </p>
-        {uploading && <div style={{ color: "#E9B44C", fontSize: 13, marginTop: 10 }}>Uploading…</div>}
+      <div style={{ background: "#141210", border: "1px solid #1e1a17", borderRadius: 12, padding: 18, marginBottom: 28, color: "#8B7355", fontSize: 13 }}>
+        Documents below are shared with you by HR. To submit a sick note or other document, please send it to your manager directly.
       </div>
 
       <DocList title="From HR" docs={hrUploads} onDownload={downloadDoc} emptyText="HR hasn't shared any documents with you yet." />
