@@ -7,7 +7,9 @@ import { useCurrentEmployee } from "@/lib/staff-auth";
 export default function StaffProfilePage() {
   const { employee, loading } = useCurrentEmployee();
 
-  const [editing, setEditing] = useState(false);
+  // VIEW-ONLY portal — editing is permanently disabled.
+  // Re-enable by removing the `false &&` from the useState below if HR ever wants self-service back.
+  const [editing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [savedAt, setSavedAt] = useState<string | null>(null);
@@ -48,7 +50,7 @@ export default function StaffProfilePage() {
     if (e) { setError(e.message); setSaving(false); return; }
     setSavedAt(new Date().toLocaleTimeString());
     setSaving(false);
-    setEditing(false);
+    // setEditing removed when portal switched to view-only; save() is now dead code.
   }
 
   if (loading || !employee) return <div style={{ padding: 80, textAlign: "center", color: "#8B7355" }}>Loading…</div>;
@@ -59,31 +61,13 @@ export default function StaffProfilePage() {
         <div>
           <h1 style={{ fontSize: 28, fontWeight: 800, margin: 0, color: "#F5F0EB", letterSpacing: "-0.01em" }}>My profile</h1>
           <p style={{ color: "#8B7355", margin: "4px 0 0 0", fontSize: 14 }}>
-            Anything HR-controlled is read-only here — speak to HR if it needs updating.
+            All fields are read-only — contact HR if any details need updating.
           </p>
         </div>
-        {!editing ? (
-          <button onClick={() => setEditing(true)} style={btnPrimary}>Edit contact info</button>
-        ) : (
-          <div style={{ display: "flex", gap: 8 }}>
-            <button onClick={() => { setEditing(false); setError(""); }} style={btnSecondary}>Cancel</button>
-            <button onClick={save} disabled={saving} style={{ ...btnPrimary, opacity: saving ? 0.6 : 1 }}>
-              {saving ? "Saving…" : "Save changes"}
-            </button>
-          </div>
-        )}
+        {/* VIEW-ONLY: edit buttons removed. Re-enable by restoring the prior toggle block. */}
       </div>
 
-      {savedAt && !editing && (
-        <div style={{ padding: 10, background: "rgba(76,175,80,0.08)", color: "#4CAF50", borderRadius: 6, marginBottom: 14, fontSize: 13 }}>
-          Saved at {savedAt}.
-        </div>
-      )}
-      {error && (
-        <div style={{ padding: 10, background: "rgba(255,107,94,0.08)", color: "#ff8a7a", borderRadius: 6, marginBottom: 14, fontSize: 13 }}>
-          {error}
-        </div>
-      )}
+      {/* VIEW-ONLY: feedback toasts (saved/error) removed — no edits can be made from this page. */}
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 14 }}>
         <Section title="Personal">
@@ -103,7 +87,7 @@ export default function StaffProfilePage() {
           <RO label="Clock-in PIN" value={employee.pin_code ?? "—"} mono />
         </Section>
 
-        <Section title="Contact (you can edit)">
+        <Section title="Contact">
           {editing ? (
             <>
               <Field label="Phone">
