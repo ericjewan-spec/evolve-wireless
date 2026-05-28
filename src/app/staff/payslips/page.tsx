@@ -40,6 +40,7 @@ export default function StaffPayslipsPage() {
   const [rows, setRows] = useState<PayslipRow[]>([]);
   const [loadingRows, setLoadingRows] = useState(true);
   const [openId, setOpenId] = useState<string | null>(null);
+  const [generatingId, setGeneratingId] = useState<string | null>(null);
 
   const fetchRows = useCallback(async () => {
     if (!employee) return;
@@ -115,17 +116,61 @@ export default function StaffPayslipsPage() {
                     </div>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    {r.pdf_path && (
+                    {run?.status === "paid" && (
                       <button
                         onClick={async (e) => {
                           e.stopPropagation();
+                          if (generatingId) return; // any in-flight call locks all buttons
                           const supabase = createClient();
-                          const { data, error } = await supabase.storage
-                            .from("payslips")
-                            .createSignedUrl(r.pdf_path!, 60);
-                          if (data?.signedUrl) window.open(data.signedUrl, "_blank");
-                          else alert("Could not get download link: " + (error?.message || "unknown"));
+                          try {
+                            // If we already have a stored PDF, just open it.
+                            if (r.pdf_path) {
+                              const { data, error } = await supabase.storage
+                                .from("payslips")
+                                .createSignedUrl(r.pdf_path, 60);
+                              if (error || !data?.signedUrl) {
+                                alert("Could not open the PDF: " + (error?.message || "unknown error"));
+                                return;
+                              }
+                              window.open(data.signedUrl, "_blank");
+                              return;
+                            }
+                            // Otherwise, ask the edge function to generate it now, then open.
+                            setGeneratingId(r.id);
+                            const { data: sess } = await supabase.auth.getSession();
+                            const token = sess?.session?.access_token;
+                            if (!token) {
+                              alert("Your session has expired. Please sign in again.");
+                              return;
+                            }
+                            const res = await fetch(
+                              `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/generate-payslip`,
+                              {
+                                method: "POST",
+                                headers: {
+                                  "Content-Type": "application/json",
+                                  Authorization: `Bearer ${token}`,
+                                },
+                                body: JSON.stringify({ payroll_item_id: r.id, send_email: false }),
+                              },
+                            );
+                            const json = await res.json().catch(() => ({} as { error?: string; signed_url?: string; pdf_path?: string }));
+                            if (!res.ok) {
+                              alert("Could not generate PDF: " + (json?.error || res.statusText));
+                              return;
+                            }
+                            if (json?.signed_url) {
+                              window.open(json.signed_url, "_blank");
+                            } else {
+                              alert("PDF generated but no download link was returned. Please refresh and try again.");
+                            }
+                            // Refresh the row so subsequent clicks use the stored pdf_path path.
+                            fetchRows();
+                          } finally {
+                            setGeneratingId(null);
+                          }
                         }}
+                        disabled={generatingId === r.id}
                         style={{
                           padding: "6px 12px",
                           background: "rgba(212,101,74,0.12)",
@@ -134,11 +179,12 @@ export default function StaffPayslipsPage() {
                           borderRadius: 6,
                           fontSize: 12,
                           fontWeight: 700,
-                          cursor: "pointer",
+                          cursor: generatingId === r.id ? "wait" : "pointer",
                           fontFamily: "inherit",
+                          opacity: generatingId && generatingId !== r.id ? 0.5 : 1,
                         }}
                       >
-                        ↓ PDF
+                        {generatingId === r.id ? "Generating\u2026" : "\u2193 PDF"}
                       </button>
                     )}
                     <div style={{ textAlign: "right" }}>
