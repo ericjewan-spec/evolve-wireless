@@ -120,12 +120,10 @@ export default function StaffLeavePage() {
         <div>
           <h1 style={{ fontSize: 28, fontWeight: 800, margin: 0, color: "#F5F0EB", letterSpacing: "-0.01em" }}>Leave</h1>
           <p style={{ color: "#8B7355", margin: "4px 0 0 0", fontSize: 14 }}>
-            Apply for time off and track your past requests. HR approves and decrements balances on approval.
+            Your leave balances and request history. To request leave, please contact your manager.
           </p>
         </div>
-        {!showForm && (
-          <button onClick={() => setShowForm(true)} style={btnPrimary}>+ Apply for leave</button>
-        )}
+        {/* VIEW-ONLY: Apply button removed — employees view balances/history only. */}
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12, marginBottom: 24 }}>
@@ -217,9 +215,7 @@ export default function StaffLeavePage() {
                 {r.reason && <div style={{ color: "#7A7068", fontSize: 12, marginTop: 4 }}>{r.reason}</div>}
                 {r.decision_notes && <div style={{ color: "#7A7068", fontSize: 12, marginTop: 4, fontStyle: "italic" }}>HR: {r.decision_notes}</div>}
               </div>
-              {r.status === "pending" && (
-                <button onClick={() => cancelRequest(r)} style={btnSecondary}>Cancel</button>
-              )}
+              {/* VIEW-ONLY: cancel button removed. Contact HR to cancel a pending request. */}
             </div>
           ))}
         </div>
