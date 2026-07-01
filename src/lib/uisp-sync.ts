@@ -187,3 +187,124 @@ export async function healthCheck(): Promise<{ connected: boolean; url: string; 
     return { connected: false, url: UISP_BASE_URL, error: (err as Error).message };
   }
 }
+
+/**
+ * Provision a fully-installed customer in UISP CRM.
+ *
+ * Called by the field-tech install form (/staff/install) the moment an
+ * installation is completed. Unlike createClient() (which makes a lead),
+ * this creates a real client, auto-maps the chosen plan to a UISP service
+ * plan by matching monthly price, activates the service, and stamps the
+ * client's Custom ID (userIdent) with the account number 'E{clientId}'.
+ *
+ * Returns { uispClientId, uispServiceId, accountNumber } — or null if UISP
+ * isn't configured yet (so the signup can still be saved and synced later).
+ *
+ * NOTE: requires a UISP *CRM App Key* (Settings → System → Security →
+ * App Keys inside UISP), NOT the NMS token. Set it as UISP_API_TOKEN in
+ * Vercel. Until then this returns null and the install is marked pending_sync.
+ */
+export async function provisionInstalledClient(data: {
+  firstName: string;
+  lastName: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+  city?: string;
+  region?: string;
+  monthlyGyd: number;
+}): Promise<{ uispClientId: string; uispServiceId: string | null; accountNumber: string } | null> {
+  if (!UISP_TOKEN) {
+    console.warn("UISP: No CRM App Key configured — install saved as pending_sync.");
+    return null;
+  }
+
+  const headers = {
+    "Content-Type": "application/json",
+    "x-auth-app-key": UISP_TOKEN, // CRM API authenticates with the App Key
+  };
+
+  // 1) Try to auto-map the website plan to a UISP service plan by monthly price.
+  let servicePlanId: number | null = null;
+  try {
+    const plansRes = await fetch(`${UISP_BASE_URL}/crm/api/v1.0/service-plans`, { headers });
+    if (plansRes.ok) {
+      const plans = (await plansRes.json()) as Array<{ id: number; price: number; name: string }>;
+      const match = plans.find((p) => Math.round(p.price) === Math.round(data.monthlyGyd));
+      servicePlanId = match?.id ?? null;
+      if (!servicePlanId) {
+        console.warn(`UISP: no service plan matched GYD ${data.monthlyGyd}; creating client without service.`);
+      }
+    }
+  } catch (err) {
+    console.error("UISP: service-plan lookup failed:", err);
+  }
+
+  // 2) Create the client (real client, not a lead).
+  const clientRes = await fetch(`${UISP_BASE_URL}/crm/api/v1.0/clients`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({
+      firstName: data.firstName,
+      lastName: data.lastName,
+      street1: data.address || "",
+      city: data.city || (data.region === "region1" ? "Port Kaituma" : "Georgetown"),
+      countryId: 93, // Guyana
+      isLead: false,
+      contacts: [
+        ...(data.email ? [{ email: data.email, name: `${data.firstName} ${data.lastName}`, type: { id: 1 }, isLogin: true }] : []),
+        ...(data.phone ? [{ phone: data.phone, name: `${data.firstName} ${data.lastName}`, type: { id: 1 } }] : []),
+      ],
+    }),
+  });
+
+  if (!clientRes.ok) {
+    throw new Error(`UISP client creation failed (${clientRes.status}): ${await clientRes.text()}`);
+  }
+
+  const client = await clientRes.json();
+  const clientId: number = client.id;
+  const accountNumber = `E${clientId}`;
+
+  // 3) Stamp the account number onto the client's Custom ID (userIdent).
+  try {
+    await fetch(`${UISP_BASE_URL}/crm/api/v1.0/clients/${clientId}`, {
+      method: "PATCH",
+      headers,
+      body: JSON.stringify({ userIdent: accountNumber }),
+    });
+  } catch (err) {
+    console.error("UISP: failed to set userIdent:", err);
+  }
+
+  // 4) Activate the service plan (monthly, invoiced from today).
+  let uispServiceId: string | null = null;
+  if (servicePlanId) {
+    try {
+      const svcRes = await fetch(`${UISP_BASE_URL}/crm/api/v1.0/clients/${clientId}/services`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          servicePlanId,
+          street1: data.address || "",
+          city: data.city || "Georgetown",
+          invoicingStart: new Date().toISOString().split("T")[0],
+          activeFrom: new Date().toISOString().split("T")[0],
+          invoicingPeriodType: 4, // Monthly
+          invoicingPeriodStartDay: 1,
+        }),
+      });
+      if (svcRes.ok) {
+        const svc = await svcRes.json();
+        uispServiceId = String(svc.id);
+      } else {
+        console.error("UISP: service activation failed:", await svcRes.text());
+      }
+    } catch (err) {
+      console.error("UISP: service activation error:", err);
+    }
+  }
+
+  console.log(`UISP: provisioned client ${clientId} (${accountNumber}), service ${uispServiceId ?? "none"}`);
+  return { uispClientId: String(clientId), uispServiceId, accountNumber };
+}

@@ -163,6 +163,7 @@ export default function StaffDashboard() {
 
         <Panel title="Quick links">
           <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 4 }}>
+            <Link href="/staff/install" style={{ ...qlLink, background: "rgba(31,111,61,0.10)", color: "#1F6F3D", fontWeight: 700 }}>🛠 New install sign-up</Link>
             <Link href="/staff/leave" style={qlLink}>📅 Request leave</Link>
             <Link href="/staff/documents" style={qlLink}>📎 Upload a sick note</Link>
             <Link href="/staff/development" style={qlLink}>
