@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase-server";
 import { createServiceClient } from "@/lib/supabase-service";
 import { provisionInstalledClient } from "@/lib/uisp-sync";
 import { slackNewSignup } from "@/lib/slack";
@@ -9,23 +8,27 @@ export const dynamic = "force-dynamic";
 /**
  * POST /api/v1/field/signup
  *
- * Called by the field-tech install form (/staff/install) when an
- * installation is completed. Flow:
- *   1. Auth-gate (must be a signed-in staff member)
+ * Called by the public field-tech install form (/install) when an
+ * installation is completed. Access is gated by the shared install code
+ * (x-install-code header), not a staff login. Flow:
+ *   1. Validate the shared install code
  *   2. Provision the client in UISP CRM (client + service + account number)
  *   3. Persist the install as a field_signups row
  *   4. Return { token, accountNumber, contractUrl } for WhatsApp delivery
- *
- * If UISP isn't connected yet (no CRM App Key), the install is still saved
- * with status 'pending_sync' and account_number null — the contract link
- * works, and the row can be re-synced to UISP once the key is added.
  */
 export async function POST(req: NextRequest) {
-  // 1) Auth — only signed-in staff/admins reach /staff, but double-check here.
-  const authed = await createClient();
-  const { data: { user } } = await authed.auth.getUser();
-  if (!user) {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const svc = createServiceClient();
+
+  // 1) Gate on the shared install code (defense-in-depth; the form checks too).
+  const provided = req.headers.get("x-install-code")?.trim() || "";
+  const { data: codeRow } = await svc
+    .from("app_settings")
+    .select("value")
+    .eq("key", "field_install_code")
+    .maybeSingle();
+  const expected = codeRow?.value || null;
+  if (!expected || provided !== expected) {
+    return NextResponse.json({ error: "invalid_code" }, { status: 403 });
   }
 
   const body = await req.json().catch(() => ({}));
@@ -74,7 +77,6 @@ export async function POST(req: NextRequest) {
   }
 
   // 3) Persist the install.
-  const svc = createServiceClient();
   const { data: row, error: insErr } = await svc
     .from("field_signups")
     .insert({
@@ -102,7 +104,7 @@ export async function POST(req: NextRequest) {
       uisp_synced_at: uispClientId ? new Date().toISOString() : null,
       uisp_error: uispError,
       status: uispClientId ? "active" : "pending_sync",
-      created_by: user.id,
+      created_by: null,
     })
     .select("id, public_token, account_number")
     .single();

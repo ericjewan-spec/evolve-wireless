@@ -1,7 +1,6 @@
 "use client";
 
 import { useRef, useState, useEffect, useCallback } from "react";
-import Link from "next/link";
 
 const PLANS: Record<string, Array<{ id: string; name: string; price_gyd: number; speed_down_mbps: number }>> = {
   ecd: [
@@ -32,6 +31,52 @@ function waNumber(raw: string) {
 type Result = { accountNumber: string | null; contractUrl: string; uispConnected: boolean; uispError: string | null };
 
 export default function InstallPage() {
+  // ── Access code gate ──
+  const [unlocked, setUnlocked] = useState(false);
+  const [checkingGate, setCheckingGate] = useState(true);
+  const [code, setCode] = useState("");
+  const [codeError, setCodeError] = useState("");
+  const [verifying, setVerifying] = useState(false);
+
+  useEffect(() => {
+    const saved = typeof window !== "undefined" ? localStorage.getItem("evolve_install_code") : null;
+    if (!saved) { setCheckingGate(false); return; }
+    fetch("/api/v1/field/verify-code", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code: saved }),
+    })
+      .then((r) => r.json())
+      .then((j) => { if (j.ok) { setCode(saved); setUnlocked(true); } else { localStorage.removeItem("evolve_install_code"); } })
+      .catch(() => {})
+      .finally(() => setCheckingGate(false));
+  }, []);
+
+  const submitCode = useCallback(async () => {
+    setVerifying(true);
+    setCodeError("");
+    try {
+      const res = await fetch("/api/v1/field/verify-code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: code.trim() }),
+      });
+      const j = await res.json();
+      if (j.ok) {
+        localStorage.setItem("evolve_install_code", code.trim());
+        setUnlocked(true);
+      } else {
+        setCodeError("Incorrect code. Check with the office.");
+      }
+    } catch {
+      setCodeError("Network error — try again.");
+    } finally {
+      setVerifying(false);
+    }
+  }, [code]);
+
+  const lock = () => { localStorage.removeItem("evolve_install_code"); setUnlocked(false); setCode(""); };
+
   const [region, setRegion] = useState("ecd");
   const [planId, setPlanId] = useState("");
   const [form, setForm] = useState({
@@ -104,7 +149,10 @@ export default function InstallPage() {
       const signature = hasSig ? canvasRef.current!.toDataURL("image/png") : null;
       const res = await fetch("/api/v1/field/signup", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-install-code": (typeof window !== "undefined" ? localStorage.getItem("evolve_install_code") : "") || code,
+        },
         body: JSON.stringify({
           fullName: form.fullName,
           phone: form.phone,
@@ -127,6 +175,7 @@ export default function InstallPage() {
         }),
       });
       const json = await res.json();
+      if (res.status === 403) { lock(); throw new Error("Install code no longer valid — re-enter it."); }
       if (!res.ok || !json.success) throw new Error(json.detail || json.error || "Signup failed");
       setResult({
         accountNumber: json.accountNumber,
@@ -140,6 +189,39 @@ export default function InstallPage() {
       setLoading(false);
     }
   }, [form, region, planId, plan, hasSig]);
+
+  // ── Access code gate render ──
+  if (checkingGate) {
+    return <div style={{ padding: 80, textAlign: "center", color: "#8B7355" }}>Loading…</div>;
+  }
+  if (!unlocked) {
+    return (
+      <div style={{ maxWidth: 380, margin: "0 auto", padding: "60px 20px" }}>
+        <div style={{ textAlign: "center", marginBottom: 24 }}>
+          <div style={{ fontSize: 40 }}>🛠</div>
+          <h1 style={{ color: GREEN, fontSize: 22, margin: "8px 0 4px" }}>Evolve Install Sign-Up</h1>
+          <p style={{ color: BROWN, fontSize: 14 }}>Enter the install code to continue.</p>
+        </div>
+        <input
+          style={{ ...inp, textAlign: "center", fontSize: 18, letterSpacing: 1 }}
+          value={code}
+          onChange={(e) => setCode(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") submitCode(); }}
+          placeholder="Install code"
+          autoFocus
+        />
+        {codeError && <div style={{ color: "#B42318", fontSize: 13, marginTop: 8, textAlign: "center" }}>{codeError}</div>}
+        <button
+          onClick={submitCode}
+          disabled={!code.trim() || verifying}
+          style={{ width: "100%", marginTop: 14, padding: 15, borderRadius: 12, border: "none", fontSize: 16, fontWeight: 700, color: "#fff", background: code.trim() && !verifying ? GREEN : "#B9C6BE", cursor: code.trim() && !verifying ? "pointer" : "not-allowed" }}
+        >
+          {verifying ? "Checking…" : "Continue"}
+        </button>
+        <p style={{ color: "#B9A88F", fontSize: 12, textAlign: "center", marginTop: 16 }}>You only enter this once on this phone.</p>
+      </div>
+    );
+  }
 
   // ── Success screen ──
   if (result) {
@@ -203,7 +285,7 @@ export default function InstallPage() {
     <div style={{ maxWidth: 560, margin: "0 auto", padding: "20px 16px 60px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
         <h1 style={{ color: GREEN, fontSize: 22, margin: 0 }}>New Install Sign-Up</h1>
-        <Link href="/staff" style={{ color: BROWN, fontSize: 13 }}>← Portal</Link>
+        <button onClick={lock} style={{ background: "none", border: "none", color: BROWN, fontSize: 13, cursor: "pointer" }}>🔒 Lock</button>
       </div>
       <p style={{ color: BROWN, fontSize: 14, marginBottom: 20 }}>
         Complete this after the installation is done. The customer gets their account number and contract on WhatsApp.
