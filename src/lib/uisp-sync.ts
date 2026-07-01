@@ -188,21 +188,58 @@ export async function healthCheck(): Promise<{ connected: boolean; url: string; 
   }
 }
 
+
+// Website plan id  →  UISP service plan id (verified against evolveenterprise.uisp.com)
+const UISP_PLAN_MAP: Record<string, number> = {
+  "ecd-starter": 2,   // Basic Plan 5K
+  "ecd-family": 3,    // Preffered Plan 8K
+  "ecd-power": 4,     // Premium Plan 10K
+  "r1-essential": 7,  // PK Basic 10K
+  "r1-standard": 5,   // PK Preferred 15K
+  "r1-premium": 6,    // PK Premium 25K
+};
+
+/**
+ * Find the next account number in Evolve's E-sequence (userIdent).
+ * Account numbers (e.g. E11749) are a manually-maintained sequence, separate
+ * from the UISP client id. We read the most recent clients and continue from
+ * the current maximum. Returns null if it can't be determined (so we leave the
+ * number pending rather than risk a collision).
+ */
+async function nextAccountNumber(headers: Record<string, string>): Promise<string | null> {
+  try {
+    const res = await fetch(
+      `${UISP_BASE_URL}/crm/api/v1.0/clients?limit=400&order=client.id&direction=DESC`,
+      { headers },
+    );
+    if (!res.ok) return null;
+    const clients = (await res.json()) as Array<{ userIdent?: string }>;
+    let max = 0;
+    for (const c of clients) {
+      const m = /^[eE](\d+)$/.exec((c.userIdent || "").trim());
+      if (m) {
+        const n = parseInt(m[1], 10);
+        if (n > max) max = n;
+      }
+    }
+    return max > 0 ? `E${max + 1}` : null;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Provision a fully-installed customer in UISP CRM.
  *
  * Called by the field-tech install form (/staff/install) the moment an
- * installation is completed. Unlike createClient() (which makes a lead),
- * this creates a real client, auto-maps the chosen plan to a UISP service
- * plan by matching monthly price, activates the service, and stamps the
- * client's Custom ID (userIdent) with the account number 'E{clientId}'.
+ * installation is completed. Creates a real client, continues Evolve's
+ * E-number account sequence (userIdent), maps the plan explicitly, and
+ * activates the monthly service.
  *
  * Returns { uispClientId, uispServiceId, accountNumber } — or null if UISP
- * isn't configured yet (so the signup can still be saved and synced later).
+ * isn't configured (so the signup can still be saved and synced later).
  *
- * NOTE: requires a UISP *CRM App Key* (Settings → System → Security →
- * App Keys inside UISP), NOT the NMS token. Set it as UISP_API_TOKEN in
- * Vercel. Until then this returns null and the install is marked pending_sync.
+ * Requires a UISP CRM App Key set as UISP_API_TOKEN in Vercel.
  */
 export async function provisionInstalledClient(data: {
   firstName: string;
@@ -212,8 +249,8 @@ export async function provisionInstalledClient(data: {
   address?: string;
   city?: string;
   region?: string;
-  monthlyGyd: number;
-}): Promise<{ uispClientId: string; uispServiceId: string | null; accountNumber: string } | null> {
+  planId: string;
+}): Promise<{ uispClientId: string; uispServiceId: string | null; accountNumber: string | null } | null> {
   if (!UISP_TOKEN) {
     console.warn("UISP: No CRM App Key configured — install saved as pending_sync.");
     return null;
@@ -221,39 +258,35 @@ export async function provisionInstalledClient(data: {
 
   const headers = {
     "Content-Type": "application/json",
-    "x-auth-app-key": UISP_TOKEN, // CRM API authenticates with the App Key
+    "X-Auth-App-Key": UISP_TOKEN,
   };
 
-  // 1) Try to auto-map the website plan to a UISP service plan by monthly price.
-  let servicePlanId: number | null = null;
-  try {
-    const plansRes = await fetch(`${UISP_BASE_URL}/crm/api/v1.0/service-plans`, { headers });
-    if (plansRes.ok) {
-      const plans = (await plansRes.json()) as Array<{ id: number; price: number; name: string }>;
-      const match = plans.find((p) => Math.round(p.price) === Math.round(data.monthlyGyd));
-      servicePlanId = match?.id ?? null;
-      if (!servicePlanId) {
-        console.warn(`UISP: no service plan matched GYD ${data.monthlyGyd}; creating client without service.`);
-      }
-    }
-  } catch (err) {
-    console.error("UISP: service-plan lookup failed:", err);
-  }
+  const servicePlanId = UISP_PLAN_MAP[data.planId] ?? null;
+  const accountNumber = await nextAccountNumber(headers);
 
-  // 2) Create the client (real client, not a lead).
+  // 1) Create the client (real client, not a lead), continuing the E-sequence.
   const clientRes = await fetch(`${UISP_BASE_URL}/crm/api/v1.0/clients`, {
     method: "POST",
     headers,
     body: JSON.stringify({
+      clientType: 1,        // Residential
+      organizationId: 1,
       firstName: data.firstName,
       lastName: data.lastName,
+      ...(accountNumber ? { userIdent: accountNumber } : {}),
       street1: data.address || "",
       city: data.city || (data.region === "region1" ? "Port Kaituma" : "Georgetown"),
-      countryId: 93, // Guyana
+      countryId: 110,       // Guyana (verified against live CRM)
       isLead: false,
       contacts: [
-        ...(data.email ? [{ email: data.email, name: `${data.firstName} ${data.lastName}`, type: { id: 1 }, isLogin: true }] : []),
-        ...(data.phone ? [{ phone: data.phone, name: `${data.firstName} ${data.lastName}`, type: { id: 1 } }] : []),
+        {
+          name: `${data.firstName} ${data.lastName}`.trim(),
+          isBilling: true,
+          isContact: true,
+          types: [{ id: 1 }],
+          ...(data.email ? { email: data.email } : {}),
+          ...(data.phone ? { phone: data.phone } : {}),
+        },
       ],
     }),
   });
@@ -264,20 +297,10 @@ export async function provisionInstalledClient(data: {
 
   const client = await clientRes.json();
   const clientId: number = client.id;
-  const accountNumber = `E${clientId}`;
+  // Prefer whatever UISP actually stored as userIdent; fall back to what we sent.
+  const finalAccount: string | null = client.userIdent || accountNumber || null;
 
-  // 3) Stamp the account number onto the client's Custom ID (userIdent).
-  try {
-    await fetch(`${UISP_BASE_URL}/crm/api/v1.0/clients/${clientId}`, {
-      method: "PATCH",
-      headers,
-      body: JSON.stringify({ userIdent: accountNumber }),
-    });
-  } catch (err) {
-    console.error("UISP: failed to set userIdent:", err);
-  }
-
-  // 4) Activate the service plan (monthly, invoiced from today).
+  // 2) Activate the monthly service plan.
   let uispServiceId: string | null = null;
   if (servicePlanId) {
     try {
@@ -303,8 +326,10 @@ export async function provisionInstalledClient(data: {
     } catch (err) {
       console.error("UISP: service activation error:", err);
     }
+  } else {
+    console.warn(`UISP: no plan mapping for '${data.planId}' — client created without service.`);
   }
 
-  console.log(`UISP: provisioned client ${clientId} (${accountNumber}), service ${uispServiceId ?? "none"}`);
-  return { uispClientId: String(clientId), uispServiceId, accountNumber };
+  console.log(`UISP: provisioned client ${clientId} (${finalAccount ?? "no account #"}), service ${uispServiceId ?? "none"}`);
+  return { uispClientId: String(clientId), uispServiceId, accountNumber: finalAccount };
 }

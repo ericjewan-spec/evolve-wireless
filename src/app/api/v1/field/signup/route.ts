@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
       address: `${address}${village ? ", " + village : ""}`,
       region,
       city: region === "region1" ? "Port Kaituma" : "Georgetown",
-      monthlyGyd: Number(monthlyGyd) || 0,
+      planId,
     });
     if (provisioned) {
       uispClientId = provisioned.uispClientId;
