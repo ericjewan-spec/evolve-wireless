@@ -283,7 +283,6 @@ export async function provisionInstalledClient(data: {
           name: `${data.firstName} ${data.lastName}`.trim(),
           isBilling: true,
           isContact: true,
-          types: [{ id: 1 }],
           ...(data.email ? { email: data.email } : {}),
           ...(data.phone ? { phone: data.phone } : {}),
         },
