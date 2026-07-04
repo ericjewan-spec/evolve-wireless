@@ -37,6 +37,7 @@ export async function POST(req: NextRequest) {
     planId, planName, monthlyGyd, baseMbps, installFeeGyd,
     equipment, wifiName, wifiPassword, landlordName,
     subscriberSignature, technicianName, installDate,
+    gpsLat, gpsLon, gpsAccuracyM, photos,
   } = body;
 
   if (!fullName || !phone || !address || !planId) {
@@ -65,6 +66,8 @@ export async function POST(req: NextRequest) {
       region,
       city: region === "region1" ? "Port Kaituma" : "Georgetown",
       planId,
+      gpsLat: typeof gpsLat === "number" ? gpsLat : null,
+      gpsLon: typeof gpsLon === "number" ? gpsLon : null,
     });
     if (provisioned) {
       uispClientId = provisioned.uispClientId;
@@ -98,6 +101,10 @@ export async function POST(req: NextRequest) {
       subscriber_signature: subscriberSignature || null,
       technician_name: technicianName || null,
       install_date: installDate || undefined,
+      gps_lat: typeof gpsLat === "number" ? gpsLat : null,
+      gps_lon: typeof gpsLon === "number" ? gpsLon : null,
+      gps_accuracy_m: typeof gpsAccuracyM === "number" ? gpsAccuracyM : null,
+      photos: Array.isArray(photos) ? photos.slice(0, 12) : [],
       uisp_client_id: uispClientId,
       uisp_service_id: uispServiceId,
       account_number: accountNumber,

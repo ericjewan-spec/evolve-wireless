@@ -250,6 +250,8 @@ export async function provisionInstalledClient(data: {
   city?: string;
   region?: string;
   planId: string;
+  gpsLat?: number | null;
+  gpsLon?: number | null;
 }): Promise<{ uispClientId: string; uispServiceId: string | null; accountNumber: string | null } | null> {
   if (!UISP_TOKEN) {
     console.warn("UISP: No CRM App Key configured — install saved as pending_sync.");

@@ -142,6 +142,77 @@ export default function InstallPage() {
     setHasSig(false);
   };
 
+  // ── GPS location ──
+  const [gps, setGps] = useState<{ lat: number; lon: number; acc: number } | null>(null);
+  const [gpsBusy, setGpsBusy] = useState(false);
+  const [gpsError, setGpsError] = useState("");
+
+  const captureGps = useCallback(() => {
+    if (!navigator.geolocation) { setGpsError("GPS not supported on this device."); return; }
+    setGpsBusy(true);
+    setGpsError("");
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setGps({ lat: pos.coords.latitude, lon: pos.coords.longitude, acc: Math.round(pos.coords.accuracy) });
+        setGpsBusy(false);
+      },
+      (err) => {
+        setGpsError(err.code === 1 ? "Location permission denied — allow it in your browser settings." : "Couldn't get a GPS fix. Step outside and try again.");
+        setGpsBusy(false);
+      },
+      { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 },
+    );
+  }, []);
+
+  // ── Install photos ──
+  type Photo = { path: string; preview: string; uploading?: boolean };
+  const [photos, setPhotos] = useState<Photo[]>([]);
+  const [photoError, setPhotoError] = useState("");
+
+  const compress = (file: File): Promise<Blob> =>
+    new Promise((resolve, reject) => {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        const MAX = 1600;
+        const scale = Math.min(1, MAX / Math.max(img.width, img.height));
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        canvas.getContext("2d")!.drawImage(img, 0, 0, canvas.width, canvas.height);
+        URL.revokeObjectURL(url);
+        canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("compress failed"))), "image/jpeg", 0.8);
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("bad image")); };
+      img.src = url;
+    });
+
+  const addPhotos = useCallback(async (files: FileList | null) => {
+    if (!files?.length) return;
+    setPhotoError("");
+    const codeHdr = (typeof window !== "undefined" ? localStorage.getItem("evolve_install_code") : "") || code;
+    for (const file of Array.from(files).slice(0, 12 - photos.length)) {
+      const preview = URL.createObjectURL(file);
+      const temp: Photo = { path: "", preview, uploading: true };
+      setPhotos((p) => [...p, temp]);
+      try {
+        const blob = await compress(file);
+        const fd = new FormData();
+        fd.append("file", blob, "photo.jpg");
+        const res = await fetch("/api/v1/field/photo", { method: "POST", headers: { "x-install-code": codeHdr }, body: fd });
+        const j = await res.json();
+        if (!res.ok || !j.path) throw new Error(j.detail || j.error || "upload failed");
+        setPhotos((p) => p.map((x) => (x.preview === preview ? { ...x, path: j.path, uploading: false } : x)));
+      } catch (e) {
+        setPhotos((p) => p.filter((x) => x.preview !== preview));
+        setPhotoError(`A photo failed to upload (${(e as Error).message}) — try again.`);
+      }
+    }
+  }, [photos.length, code]);
+
+  const removePhoto = (preview: string) => setPhotos((p) => p.filter((x) => x.preview !== preview));
+  const photosUploading = photos.some((p) => p.uploading);
+
   const submit = useCallback(async () => {
     setLoading(true);
     setError("");
@@ -172,6 +243,10 @@ export default function InstallPage() {
           technicianName: form.technicianName,
           installDate: form.installDate,
           subscriberSignature: signature,
+          gpsLat: gps?.lat ?? null,
+          gpsLon: gps?.lon ?? null,
+          gpsAccuracyM: gps?.acc ?? null,
+          photos: photos.filter((p) => p.path).map((p) => p.path),
         }),
       });
       const json = await res.json();
@@ -188,7 +263,7 @@ export default function InstallPage() {
     } finally {
       setLoading(false);
     }
-  }, [form, region, planId, plan, hasSig]);
+  }, [form, region, planId, plan, hasSig, gps, photos, code]);
 
   // ── Access code gate render ──
   if (checkingGate) {
@@ -341,6 +416,39 @@ export default function InstallPage() {
         <Field label="Landlord Name (if applicable)"><input style={inp} value={form.landlordName} onChange={(e) => set("landlordName", e.target.value)} /></Field>
       </Section>
 
+      <Section title="Customer Location (GPS)">
+        <button onClick={captureGps} disabled={gpsBusy}
+          style={{ width: "100%", padding: 13, borderRadius: 10, border: gps ? "2px solid " + GREEN : "1.5px dashed #bbb", background: gps ? "#F0F7F2" : "#fff", color: gps ? GREEN : BROWN, fontSize: 15, fontWeight: 600, cursor: "pointer" }}>
+          {gpsBusy ? "Getting GPS fix…" : gps ? `📍 Location captured (±${gps.acc}m) — tap to retake` : "📍 Capture customer location"}
+        </button>
+        {gps && <div style={{ fontSize: 12, color: "#888", textAlign: "center" }}>{gps.lat.toFixed(6)}, {gps.lon.toFixed(6)} — stand at the customer's premises when capturing</div>}
+        {gpsError && <div style={{ color: "#B42318", fontSize: 13 }}>{gpsError}</div>}
+      </Section>
+
+      <Section title="Install Photos">
+        <label style={{ display: "block", padding: 13, borderRadius: 10, border: "1.5px dashed #bbb", background: "#fff", color: BROWN, fontSize: 15, fontWeight: 600, textAlign: "center", cursor: "pointer" }}>
+          📷 Add photos ({photos.length}/12)
+          <input type="file" accept="image/*" capture="environment" multiple style={{ display: "none" }}
+            onChange={(e) => { addPhotos(e.target.files); e.target.value = ""; }} />
+        </label>
+        {photos.length > 0 && (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
+            {photos.map((p) => (
+              <div key={p.preview} style={{ position: "relative" }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={p.preview} alt="install" style={{ width: "100%", aspectRatio: "1", objectFit: "cover", borderRadius: 8, opacity: p.uploading ? 0.4 : 1 }} />
+                {p.uploading && <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: BROWN }}>Uploading…</div>}
+                {!p.uploading && (
+                  <button onClick={() => removePhoto(p.preview)}
+                    style={{ position: "absolute", top: -6, right: -6, width: 22, height: 22, borderRadius: 11, border: "none", background: "#B42318", color: "#fff", fontSize: 12, cursor: "pointer", lineHeight: 1 }}>✕</button>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+        {photoError && <div style={{ color: "#B42318", fontSize: 13 }}>{photoError}</div>}
+      </Section>
+
       <Section title="Customer Signature">
         <div style={{ border: "1.5px dashed #bbb", borderRadius: 10, background: "#fff", touchAction: "none" }}>
           <canvas ref={canvasRef}
@@ -352,13 +460,13 @@ export default function InstallPage() {
 
       {error && <div style={{ background: "#FDECEA", color: "#B42318", padding: 12, borderRadius: 10, marginBottom: 14, fontSize: 14 }}>{error}</div>}
 
-      <button onClick={submit} disabled={!valid || loading}
+      <button onClick={submit} disabled={!valid || loading || photosUploading}
         style={{
           width: "100%", padding: 16, borderRadius: 12, border: "none", fontSize: 16, fontWeight: 700,
           color: "#fff", background: valid && !loading ? GREEN : "#B9C6BE",
           cursor: valid && !loading ? "pointer" : "not-allowed",
         }}>
-        {loading ? "Signing up…" : "Complete Sign-Up"}
+        {loading ? "Signing up…" : photosUploading ? "Waiting for photos…" : "Complete Sign-Up"}
       </button>
     </div>
   );
