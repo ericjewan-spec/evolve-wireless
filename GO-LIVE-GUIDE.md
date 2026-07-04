@@ -57,7 +57,7 @@
 - On submit the system: creates the **real UISP client**, assigns the next **E-number** (continues your sequence automatically), activates the plan (monthly invoicing starts same day), pins the **GPS location on the UISP service map**, saves everything, and generates the contract.
 - Success screen: account number + one-tap **Send on WhatsApp** (account no., WiFi login, contract link).
 - Contract: `evolvewireless.gy/contract/<unique-token>` — the full agreement, pre-filled, with Save-as-PDF. The link is the customer's permanent copy.
-- Photos & GPS: the location pins on the **UISP service map**; photos are stored privately in Supabase and viewed in the **admin gallery at `/admin/installs`** (UISP has no photo storage).
+- Photos & GPS: the location pins on the **UISP service map**, and each photo is **attached to the client's Documents in UCRM** automatically. Photos are also kept in Supabase and viewable in the **admin gallery at `/admin/installs`**.
 
 **Staff portal** — `/staff` (login required): attendance, leave, payslips, documents, profile; admin side runs payroll (NIS/PAYE), leave approvals, payslip PDFs, Slack HR notifications.
 
