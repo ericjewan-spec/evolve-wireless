@@ -196,7 +196,12 @@ export default function InstallPage() {
       const temp: Photo = { path: "", preview, uploading: true };
       setPhotos((p) => [...p, temp]);
       try {
-        const blob = await compress(file);
+        let blob: Blob;
+        try {
+          blob = await compress(file);
+        } catch {
+          blob = file; // e.g. HEIC the browser can't decode — upload original (server allows up to 8MB)
+        }
         const fd = new FormData();
         fd.append("file", blob, "photo.jpg");
         const res = await fetch("/api/v1/field/photo", { method: "POST", headers: { "x-install-code": codeHdr }, body: fd });
@@ -426,11 +431,19 @@ export default function InstallPage() {
       </Section>
 
       <Section title="Install Photos">
-        <label style={{ display: "block", padding: 13, borderRadius: 10, border: "1.5px dashed #bbb", background: "#fff", color: BROWN, fontSize: 15, fontWeight: 600, textAlign: "center", cursor: "pointer" }}>
-          📷 Add photos ({photos.length}/12)
-          <input type="file" accept="image/*" capture="environment" multiple style={{ display: "none" }}
-            onChange={(e) => { addPhotos(e.target.files); e.target.value = ""; }} />
-        </label>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+          <label style={{ display: "block", padding: 13, borderRadius: 10, border: "1.5px dashed #bbb", background: "#fff", color: BROWN, fontSize: 14, fontWeight: 600, textAlign: "center", cursor: "pointer" }}>
+            📷 Take photo
+            <input type="file" accept="image/*" capture="environment" style={{ display: "none" }}
+              onChange={(e) => { addPhotos(e.target.files); e.target.value = ""; }} />
+          </label>
+          <label style={{ display: "block", padding: 13, borderRadius: 10, border: "1.5px dashed #bbb", background: "#fff", color: BROWN, fontSize: 14, fontWeight: 600, textAlign: "center", cursor: "pointer" }}>
+            🖼 Upload photos
+            <input type="file" accept="image/*" multiple style={{ display: "none" }}
+              onChange={(e) => { addPhotos(e.target.files); e.target.value = ""; }} />
+          </label>
+        </div>
+        <div style={{ fontSize: 12, color: "#888", textAlign: "center" }}>{photos.length}/12 photos</div>
         {photos.length > 0 && (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
             {photos.map((p) => (

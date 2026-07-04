@@ -73,6 +73,7 @@ export async function POST(req: NextRequest) {
       uispClientId = provisioned.uispClientId;
       uispServiceId = provisioned.uispServiceId;
       accountNumber = provisioned.accountNumber;
+      if (provisioned.serviceError) uispError = provisioned.serviceError;
     }
   } catch (err) {
     uispError = (err as Error).message;

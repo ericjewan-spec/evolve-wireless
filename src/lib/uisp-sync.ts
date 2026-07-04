@@ -252,7 +252,7 @@ export async function provisionInstalledClient(data: {
   planId: string;
   gpsLat?: number | null;
   gpsLon?: number | null;
-}): Promise<{ uispClientId: string; uispServiceId: string | null; accountNumber: string | null } | null> {
+}): Promise<{ uispClientId: string; uispServiceId: string | null; accountNumber: string | null; serviceError: string | null } | null> {
   if (!UISP_TOKEN) {
     console.warn("UISP: No CRM App Key configured — install saved as pending_sync.");
     return null;
@@ -301,36 +301,59 @@ export async function provisionInstalledClient(data: {
   // Prefer whatever UISP actually stored as userIdent; fall back to what we sent.
   const finalAccount: string | null = client.userIdent || accountNumber || null;
 
-  // 2) Activate the monthly service plan.
+  // 2) Activate the service. UISP requires the plan's *billing period* id
+  //    (servicePlanId is rejected for recurring services) and full ISO-8601
+  //    datetimes. The enabled monthly period is looked up live so price edits
+  //    in UISP never break provisioning. GPS coords pin the service on the map.
   let uispServiceId: string | null = null;
+  let serviceError: string | null = null;
   if (servicePlanId) {
     try {
-      const svcRes = await fetch(`${UISP_BASE_URL}/crm/api/v1.0/clients/${clientId}/services`, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({
-          servicePlanId,
-          street1: data.address || "",
-          city: data.city || "Georgetown",
-          invoicingStart: new Date().toISOString().split("T")[0],
-          activeFrom: new Date().toISOString().split("T")[0],
-          invoicingPeriodType: 4, // Monthly
-          invoicingPeriodStartDay: 1,
-        }),
-      });
-      if (svcRes.ok) {
-        const svc = await svcRes.json();
-        uispServiceId = String(svc.id);
+      const planRes = await fetch(`${UISP_BASE_URL}/crm/api/v1.0/service-plans/${servicePlanId}`, { headers });
+      let periodId: number | null = null;
+      if (planRes.ok) {
+        const plan = await planRes.json();
+        const monthly =
+          (plan.periods || []).find((p: { period: number; enabled: boolean }) => p.enabled && p.period === 1) ||
+          (plan.periods || []).find((p: { enabled: boolean }) => p.enabled);
+        periodId = monthly?.id ?? null;
+      }
+      if (!periodId) {
+        serviceError = `No enabled billing period on UISP plan ${servicePlanId}`;
+        console.error("UISP:", serviceError);
       } else {
-        console.error("UISP: service activation failed:", await svcRes.text());
+        const today = new Date().toISOString().split("T")[0] + "T00:00:00+0000";
+        const svcRes = await fetch(`${UISP_BASE_URL}/crm/api/v1.0/clients/${clientId}/services`, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            servicePlanPeriodId: periodId,
+            activeFrom: today,
+            invoicingStart: today,
+            street1: data.address || "",
+            city: data.city || "Georgetown",
+            ...(data.gpsLat != null && data.gpsLon != null
+              ? { addressGpsLat: data.gpsLat, addressGpsLon: data.gpsLon }
+              : {}),
+          }),
+        });
+        if (svcRes.ok) {
+          const svc = await svcRes.json();
+          uispServiceId = String(svc.id);
+        } else {
+          serviceError = `Service activation failed (${svcRes.status}): ${await svcRes.text()}`;
+          console.error("UISP:", serviceError);
+        }
       }
     } catch (err) {
-      console.error("UISP: service activation error:", err);
+      serviceError = `Service activation error: ${(err as Error).message}`;
+      console.error("UISP:", serviceError);
     }
   } else {
-    console.warn(`UISP: no plan mapping for '${data.planId}' — client created without service.`);
+    serviceError = `No plan mapping for '${data.planId}'`;
+    console.warn("UISP:", serviceError, "— client created without service.");
   }
 
   console.log(`UISP: provisioned client ${clientId} (${finalAccount ?? "no account #"}), service ${uispServiceId ?? "none"}`);
-  return { uispClientId: String(clientId), uispServiceId, accountNumber: finalAccount };
+  return { uispClientId: String(clientId), uispServiceId, accountNumber: finalAccount, serviceError };
 }
