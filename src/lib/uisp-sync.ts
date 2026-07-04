@@ -357,3 +357,33 @@ export async function provisionInstalledClient(data: {
   console.log(`UISP: provisioned client ${clientId} (${finalAccount ?? "no account #"}), service ${uispServiceId ?? "none"}`);
   return { uispClientId: String(clientId), uispServiceId, accountNumber: finalAccount, serviceError };
 }
+
+/**
+ * Attach install photos to a UISP client's Documents.
+ *
+ * UISP's document upload wants JSON (not multipart): { clientId, name, file }
+ * where `file` is base64. Verified against evolveenterprise.uisp.com (201).
+ * Best-effort: returns the count uploaded; never throws.
+ */
+export async function attachClientDocuments(
+  clientId: string | number,
+  files: { name: string; base64: string }[],
+): Promise<number> {
+  if (!UISP_TOKEN || !files.length) return 0;
+  const headers = { "Content-Type": "application/json", "X-Auth-App-Key": UISP_TOKEN };
+  let ok = 0;
+  for (const f of files) {
+    try {
+      const res = await fetch(`${UISP_BASE_URL}/crm/api/v1.0/documents`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ clientId: Number(clientId), name: f.name, file: f.base64 }),
+      });
+      if (res.ok) ok++;
+      else console.error("UISP document upload failed:", res.status, (await res.text()).slice(0, 200));
+    } catch (err) {
+      console.error("UISP document upload error:", (err as Error).message);
+    }
+  }
+  return ok;
+}

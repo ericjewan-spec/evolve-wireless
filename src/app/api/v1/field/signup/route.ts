@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase-service";
-import { provisionInstalledClient } from "@/lib/uisp-sync";
+import { provisionInstalledClient, attachClientDocuments } from "@/lib/uisp-sync";
 import { slackNewSignup } from "@/lib/slack";
 
 export const dynamic = "force-dynamic";
@@ -123,6 +123,28 @@ export async function POST(req: NextRequest) {
       { error: "db_error", detail: insErr.message, uisp_client_id: uispClientId, account_number: accountNumber },
       { status: 500 },
     );
+  }
+
+  // 3b) Attach install photos to the client's UISP Documents (best effort).
+  if (uispClientId && Array.isArray(photos) && photos.length) {
+    try {
+      const toAttach: { name: string; base64: string }[] = [];
+      for (let idx = 0; idx < Math.min(photos.length, 12); idx++) {
+        const path = photos[idx];
+        const dl = await svc.storage.from("install-photos").download(path);
+        if (dl.data) {
+          const buf = Buffer.from(await dl.data.arrayBuffer());
+          toAttach.push({
+            name: `${accountNumber || "install"}-photo-${idx + 1}.jpg`,
+            base64: buf.toString("base64"),
+          });
+        }
+      }
+      const uploaded = await attachClientDocuments(uispClientId, toAttach);
+      console.log(`UISP: attached ${uploaded}/${toAttach.length} photos to client ${uispClientId}`);
+    } catch (err) {
+      console.error("UISP photo attach error:", (err as Error).message);
+    }
   }
 
   // 4) Fire-and-forget internal notification (best effort).
