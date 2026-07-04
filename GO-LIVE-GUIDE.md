@@ -57,6 +57,7 @@
 - On submit the system: creates the **real UISP client**, assigns the next **E-number** (continues your sequence automatically), activates the plan (monthly invoicing starts same day), pins the **GPS location on the UISP service map**, saves everything, and generates the contract.
 - Success screen: account number + one-tap **Send on WhatsApp** (account no., WiFi login, contract link).
 - Contract: `evolvewireless.gy/contract/<unique-token>` — the full agreement, pre-filled, with Save-as-PDF. The link is the customer's permanent copy.
+- Photos & GPS: the location pins on the **UISP service map**; photos are stored privately in Supabase and viewed in the **admin gallery at `/admin/installs`** (UISP has no photo storage).
 
 **Staff portal** — `/staff` (login required): attendance, leave, payslips, documents, profile; admin side runs payroll (NIS/PAYE), leave approvals, payslip PDFs, Slack HR notifications.
 
@@ -69,7 +70,7 @@
 | Give a tech access to sign-ups | Send them `evolvewireless.gy/install` + code **5650** |
 | Change the install code | Update the `field_install_code` row in the `app_settings` table (Supabase → Table Editor). Takes effect instantly. |
 | See all install sign-ups | Supabase → Table Editor → `field_signups` (includes GPS, photo paths, contract tokens) |
-| View install photos | Supabase → Storage → `install-photos` bucket (private) |
+| View install photos | **Admin portal → Install sign-ups** (`/admin/installs`) — photos, GPS map pin, UISP + contract links per customer. (Raw files also in Supabase → Storage → `install-photos`.) |
 | Re-send a customer's contract | Copy their `public_token` from `field_signups` → link is `evolvewireless.gy/contract/<token>` |
 | Delete a test sign-up | Delete the client in UISP (frees its E-number automatically) — the form always continues from the highest E-number left in UISP |
 | Check why something failed | Vercel → project → Logs (server errors); `field_signups.uisp_error` column (UISP rejections) |
@@ -105,4 +106,3 @@ Database changes go through Supabase migrations (SQL files in `supabase/migratio
 
 - **Route 2 WhatsApp** — contracts send themselves from an Evolve business number (needs Meta business verification + one template approval).
 - **MMG Biller API** — automatic payment reconciliation into UISP (waiting on MMG).
-- **Admin gallery** — view install photos per customer inside the staff portal instead of the Supabase dashboard.
