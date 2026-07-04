@@ -197,6 +197,12 @@ function DashboardContent() {
           href="/admin/payroll"
           tone={onboarding.some(o => o.items_pending_required > 0) ? "warn" : undefined}
         />
+        <StatCard
+          label="Install sign-ups"
+          value="View"
+          sub="photos · GPS · contracts"
+          href="/admin/installs"
+        />
       </div>
 
       {/* Two-column main grid */}
