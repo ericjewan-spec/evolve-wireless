@@ -31,6 +31,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "invalid_code" }, { status: 403 });
   }
 
+  // Region 1 account-number floor (skips reserved numbers like MA1180).
+  const { data: floorRow } = await svc
+    .from("app_settings")
+    .select("value")
+    .eq("key", "region1_account_floor")
+    .maybeSingle();
+  const region1AccountFloor = floorRow?.value ? parseInt(floorRow.value, 10) : null;
+
   const body = await req.json().catch(() => ({}));
   const {
     fullName, phone, email, region, village, address,
@@ -68,6 +76,7 @@ export async function POST(req: NextRequest) {
       planId,
       gpsLat: typeof gpsLat === "number" ? gpsLat : null,
       gpsLon: typeof gpsLon === "number" ? gpsLon : null,
+      region1AccountFloor,
     });
     if (provisioned) {
       uispClientId = provisioned.uispClientId;

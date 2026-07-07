@@ -206,23 +206,46 @@ const UISP_PLAN_MAP: Record<string, number> = {
  * the current maximum. Returns null if it can't be determined (so we leave the
  * number pending rather than risk a collision).
  */
-async function nextAccountNumber(headers: Record<string, string>): Promise<string | null> {
+/**
+ * Find the next account number, continuing the correct sequence per region:
+ *   • ECD      → E#### (e.g. E11752)
+ *   • Region 1 → MA#### (e.g. MA1181)
+ *
+ * Scans recent clients for the current maximum of the relevant prefix and adds
+ * one. For Region 1 a floor can be enforced (region1AccountFloor) so a skipped
+ * number like MA1180 is honoured — the result is max(existing+1, floor).
+ * Returns null if the scan fails, so we leave the number pending rather than
+ * risk a collision.
+ */
+async function nextAccountNumber(
+  headers: Record<string, string>,
+  region?: string,
+  region1AccountFloor?: number | null,
+): Promise<string | null> {
+  const isR1 = region === "region1";
+  const prefix = isR1 ? "MA" : "E";
+  const re = isR1 ? /^MA(\d+)$/i : /^E(\d+)$/i;
   try {
     const res = await fetch(
-      `${UISP_BASE_URL}/crm/api/v1.0/clients?limit=400&order=client.id&direction=DESC`,
+      `${UISP_BASE_URL}/crm/api/v1.0/clients?limit=1000&order=client.id&direction=DESC`,
       { headers },
     );
     if (!res.ok) return null;
     const clients = (await res.json()) as Array<{ userIdent?: string }>;
     let max = 0;
     for (const c of clients) {
-      const m = /^[eE](\d+)$/.exec((c.userIdent || "").trim());
+      const m = re.exec((c.userIdent || "").trim());
       if (m) {
         const n = parseInt(m[1], 10);
         if (n > max) max = n;
       }
     }
-    return max > 0 ? `E${max + 1}` : null;
+    if (isR1) {
+      const floor = region1AccountFloor ?? 0;
+      const next = Math.max(max + 1, floor);
+      return next > 0 ? `${prefix}${next}` : null;
+    }
+    return max > 0 ? `${prefix}${max + 1}` : null;
   } catch {
     return null;
   }
@@ -252,6 +275,7 @@ export async function provisionInstalledClient(data: {
   planId: string;
   gpsLat?: number | null;
   gpsLon?: number | null;
+  region1AccountFloor?: number | null;
 }): Promise<{ uispClientId: string; uispServiceId: string | null; accountNumber: string | null; serviceError: string | null } | null> {
   if (!UISP_TOKEN) {
     console.warn("UISP: No CRM App Key configured — install saved as pending_sync.");
@@ -264,7 +288,7 @@ export async function provisionInstalledClient(data: {
   };
 
   const servicePlanId = UISP_PLAN_MAP[data.planId] ?? null;
-  const accountNumber = await nextAccountNumber(headers);
+  const accountNumber = await nextAccountNumber(headers, data.region, data.region1AccountFloor);
 
   // 1) Create the client (real client, not a lead), continuing the E-sequence.
   const clientRes = await fetch(`${UISP_BASE_URL}/crm/api/v1.0/clients`, {
