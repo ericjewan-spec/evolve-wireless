@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase-service";
 import { provisionInstalledClient, attachClientDocuments } from "@/lib/uisp-sync";
+import { appendInstallToSheet } from "@/lib/sheets";
+import { appendInstallToSheet } from "@/lib/sheets";
 import { slackNewSignup } from "@/lib/slack";
 
 export const dynamic = "force-dynamic";
@@ -155,6 +157,32 @@ export async function POST(req: NextRequest) {
       console.error("UISP photo attach error:", (err as Error).message);
     }
   }
+
+  // 3c) Append to the Google Sheet payment ledger (best effort, non-blocking).
+  try {
+    await appendInstallToSheet({
+      accountNumber,
+      name: fullName,
+      address: `${address}${village ? ", " + village : ""}`,
+      phone,
+      monthlyGyd: Number(monthlyGyd) || 0,
+      installDate: installDate || new Date().toISOString().slice(0, 10),
+      region: region || "ecd",
+    });
+  } catch { /* non-blocking */ }
+
+  // 3c) Append to the Google Sheet payment ledger (best effort, non-blocking).
+  try {
+    await appendInstallToSheet({
+      accountNumber,
+      name: fullName,
+      address: `${address}${village ? ", " + village : ""}`,
+      phone,
+      monthlyGyd: Number(monthlyGyd) || 0,
+      installDate: installDate || new Date().toISOString().slice(0, 10),
+      region: region || "ecd",
+    });
+  } catch { /* non-blocking */ }
 
   // 4) Fire-and-forget internal notification (best effort).
   try {
