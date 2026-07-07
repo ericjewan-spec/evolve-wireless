@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase-service";
 import { provisionInstalledClient, attachClientDocuments } from "@/lib/uisp-sync";
 import { appendInstallToSheet } from "@/lib/sheets";
-import { appendInstallToSheet } from "@/lib/sheets";
 import { slackNewSignup } from "@/lib/slack";
 
 export const dynamic = "force-dynamic";
