@@ -69,13 +69,14 @@
 |---|---|
 | Give a tech access to sign-ups | Send them `evolvewireless.gy/install` + code **5650** |
 | Change the install code | Update the `field_install_code` row in the `app_settings` table (Supabase → Table Editor). Takes effect instantly. |
+| Adjust the Region 1 starting number | Set `region1_account_floor` in `app_settings` (e.g. `1181`). The next MA account is max(highest existing + 1, this floor). |
 | See all install sign-ups | Supabase → Table Editor → `field_signups` (includes GPS, photo paths, contract tokens) |
 | View install photos | **Admin portal → Install sign-ups** (`/admin/installs`) — photos, GPS map pin, UISP + contract links per customer. (Raw files also in Supabase → Storage → `install-photos`.) |
 | Re-send a customer's contract | Copy their `public_token` from `field_signups` → link is `evolvewireless.gy/contract/<token>` |
 | Delete a test sign-up | Delete the client in UISP (frees its E-number automatically) — the form always continues from the highest E-number left in UISP |
 | Check why something failed | Vercel → project → Logs (server errors); `field_signups.uisp_error` column (UISP rejections) |
 
-**Account numbers:** the form scans UISP for the highest `E####` and assigns the next one. UISP is the single source of truth — nothing to maintain.
+**Account numbers:** the form continues the right sequence per region automatically — **ECD → `E####`** (next E11752) and **Region 1 → `MA####`** (next MA1181). It scans UISP for the highest existing number of that prefix and adds one; Region 1 also respects a floor (`region1_account_floor` in `app_settings`) so reserved numbers are skipped. UISP is the single source of truth — nothing to maintain.
 
 **Test sign-ups create real billing.** A successful submission = real UISP client + invoicing from that day. Archive/delete test clients in UISP afterwards.
 
