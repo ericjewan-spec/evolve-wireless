@@ -83,8 +83,8 @@ export default function LoginPage() {
           </form>
 
           <div className="mt-6 text-center space-y-2">
-            <a href="https://wa.me/5926092487?text=Hi%2C%20I%20need%20help%20logging%20in" target="_blank" rel="noopener" className="block text-sm" style={{ color: "var(--teal)" }}>
-              Need help? WhatsApp us at +592 609-2487
+            <a href="https://wa.me/5927346480?text=Hi%2C%20I%20need%20help%20logging%20in" target="_blank" rel="noopener" className="block text-sm" style={{ color: "var(--teal)" }}>
+              Need help? WhatsApp us at +592 734-6480
             </a>
           </div>
         </div>
