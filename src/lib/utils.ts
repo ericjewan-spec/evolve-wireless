@@ -15,7 +15,7 @@ export function formatUSD(amount: number): string {
 
 /** WhatsApp deep link */
 export function waLink(message?: string): string {
-  const phone = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "5926092487";
+  const phone = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "5927346480";
   const base = `https://wa.me/${phone}`;
   return message ? `${base}?text=${encodeURIComponent(message)}` : base;
 }
