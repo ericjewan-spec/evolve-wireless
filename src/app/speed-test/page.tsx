@@ -183,7 +183,7 @@ export default function SpeedTestPage() {
                   Upgrade Your Plan →
                 </Link>
               )}
-              <a href={`https://wa.me/5926092487?text=${encodeURIComponent(`Hi! I just ran a speed test on your website. Results: Download ${download} Mbps, Upload ${upload} Mbps, Ping ${ping}ms. Can you help?`)}`} target="_blank" rel="noopener" className="btn btn-outline" style={{ padding: "12px 32px" }}>
+              <a href={`https://wa.me/5927346480?text=${encodeURIComponent(`Hi! I just ran a speed test on your website. Results: Download ${download} Mbps, Upload ${upload} Mbps, Ping ${ping}ms. Can you help?`)}`} target="_blank" rel="noopener" className="btn btn-outline" style={{ padding: "12px 32px" }}>
                 💬 Report Issue
               </a>
             </div>
