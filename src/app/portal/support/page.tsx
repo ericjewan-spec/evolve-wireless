@@ -181,7 +181,7 @@ export default function SupportPage() {
             <p className="text-sm mb-4" style={{ color: "var(--text3)" }}>Everything looking good! If you need help, create a ticket or WhatsApp us.</p>
             <div className="flex gap-3 justify-center flex-wrap">
               <button onClick={() => setShowForm(true)} className="btn btn-primary">Create Ticket</button>
-              <a href="https://wa.me/5926092487" target="_blank" rel="noopener" className="btn btn-cyan">💬 WhatsApp</a>
+              <a href="https://wa.me/5927346480" target="_blank" rel="noopener" className="btn btn-cyan">💬 WhatsApp</a>
             </div>
           </div>
         ) : (
@@ -216,8 +216,8 @@ export default function SupportPage() {
         <div className="card p-6 mt-8" style={{ background: "rgba(42,157,143,0.04)", borderColor: "rgba(42,157,143,0.15)" }}>
           <h3 className="font-bold mb-2" style={{ fontFamily: "'Bricolage Grotesque', serif" }}>Need immediate help?</h3>
           <p className="text-sm mb-3" style={{ color: "var(--text3)" }}>For urgent issues, WhatsApp us directly. We respond within the hour — 24/7.</p>
-          <a href="https://wa.me/5926092487?text=Hi%2C%20I%20need%20urgent%20support%20for%20my%20internet%20connection" target="_blank" rel="noopener" className="btn btn-cyan">
-            💬 WhatsApp Support — +592 609-2487
+          <a href="https://wa.me/5927346480?text=Hi%2C%20I%20need%20urgent%20support%20for%20my%20internet%20connection" target="_blank" rel="noopener" className="btn btn-cyan">
+            💬 WhatsApp Support — +592 734-6480
           </a>
         </div>
       </div>
