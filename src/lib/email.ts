@@ -86,7 +86,7 @@ function wrap(content: string): string {
         ${content}
         <div style="${footerStyle}">
           <p>Evolve Wireless Internet · Georgetown, Guyana</p>
-          <p>📱 +592 609-2487 · WhatsApp 24/7</p>
+          <p>📱 +592 734-6480 · WhatsApp 24/7</p>
         </div>
       </div>
     </div>
@@ -118,7 +118,7 @@ export async function sendWelcomeEmail(to: string, name: string, planName: strin
         <a href="https://evolvewireless.gy/portal" style="${btnStyle}">Go to My Dashboard</a>
       </p>
       <p style="color: #8B7355; font-size: 14px;">
-        Questions? WhatsApp us anytime at <strong>+592 609-2487</strong>
+        Questions? WhatsApp us anytime at <strong>+592 734-6480</strong>
       </p>
     `),
   });
@@ -153,7 +153,7 @@ export async function sendContactConfirmation(to: string, name: string) {
       <p style="color: #4A3728; line-height: 1.7;">
         Hi ${name.split(" ")[0]},<br><br>
         Thanks for reaching out. Our team will get back to you within <strong>1 business day</strong>.
-        For urgent issues, WhatsApp us at <strong>+592 609-2487</strong> — we respond within the hour.
+        For urgent issues, WhatsApp us at <strong>+592 734-6480</strong> — we respond within the hour.
       </p>
     `),
   });
@@ -197,7 +197,7 @@ export async function sendTicketCreated(to: string, ticketNumber: string, issueT
         <a href="https://evolvewireless.gy/portal/support" style="${btnStyle}">View My Tickets</a>
       </p>
       <p style="color: #8B7355; font-size: 14px;">
-        For urgent issues, WhatsApp us at <strong>+592 609-2487</strong>.
+        For urgent issues, WhatsApp us at <strong>+592 734-6480</strong>.
       </p>
     `),
   });
@@ -222,7 +222,7 @@ export async function sendInvoiceNotification(to: string, name: string, invoiceN
         <a href="https://evolvewireless.gy/portal/billing" style="${btnStyle}">View & Pay</a>
       </p>
       <p style="color: #8B7355; font-size: 14px;">
-        Pay via WhatsApp (+592 609-2487), bank transfer, or cash at our office.
+        Pay via WhatsApp (+592 734-6480), bank transfer, or cash at our office.
       </p>
     `),
   });
