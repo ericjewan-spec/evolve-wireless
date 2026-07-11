@@ -202,7 +202,7 @@ export default function CoverageMapPage() {
               {locating ? "📍 Getting your location..." : "📍 Use My Location"}
             </button>
             <a
-              href={`https://wa.me/5926092487?text=${encodeURIComponent(
+              href={`https://wa.me/5927346480?text=${encodeURIComponent(
                 userPin
                   ? `Hi! I checked the coverage map. I'm ${distance}km from ${nearestName}. ${inCoverage ? "I'm in coverage!" : "I'm outside coverage."} Can you confirm?`
                   : "Hi! I'd like to check if I'm in your coverage area."
@@ -270,7 +270,7 @@ export default function CoverageMapPage() {
                     <Link href="/plans" className="btn btn-outline" style={{ fontSize: "0.88rem", padding: "12px 22px" }}>View Plans</Link>
                   </>
                 ) : (
-                  <a href={`https://wa.me/5926092487?text=${encodeURIComponent(`Hi! I'm ${distance}km from ${nearestName} and outside coverage. Please notify me when you expand to my area.`)}`} target="_blank" rel="noopener" className="btn btn-outline" style={{ fontSize: "0.85rem", padding: "10px 20px" }}>
+                  <a href={`https://wa.me/5927346480?text=${encodeURIComponent(`Hi! I'm ${distance}km from ${nearestName} and outside coverage. Please notify me when you expand to my area.`)}`} target="_blank" rel="noopener" className="btn btn-outline" style={{ fontSize: "0.85rem", padding: "10px 20px" }}>
                     💬 Join Waitlist
                   </a>
                 )}
