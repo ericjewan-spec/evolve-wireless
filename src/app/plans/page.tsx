@@ -197,7 +197,7 @@ export default function PlansPage() {
             {[
               { q: "What's included?", a: "Free router, professional installation, and local support — all included." },
               { q: "How fast is installation?", a: "ECD & New Amsterdam: within 48 hours. Region 1: within 7 days." },
-              { q: "Can I upgrade my plan?", a: "Yes — WhatsApp us at +592 609-2487 and we change it from the next billing cycle." },
+              { q: "Can I upgrade my plan?", a: "Yes — WhatsApp us at +592 734-6480 and we change it from the next billing cycle." },
               { q: "What areas do you serve?", a: "East Coast Demerara, New Amsterdam, Charity, Mabaruma, Port Kaituma, and Baramita — with more areas coming soon." },
             ].map((f, i) => (
               <div key={i} className="py-4" style={{ borderTop: "1px solid rgba(44,24,16,0.08)" }}>
@@ -215,7 +215,7 @@ export default function PlansPage() {
           </h2>
           <div className="flex gap-3 justify-center flex-wrap">
             <Link href="/signup" className="btn btn-primary">Sign Up Now</Link>
-            <a href="https://wa.me/5926092487" className="btn btn-cyan" target="_blank" rel="noopener">💬 WhatsApp Us</a>
+            <a href="https://wa.me/5927346480" className="btn btn-cyan" target="_blank" rel="noopener">💬 WhatsApp Us</a>
           </div>
         </div>
       </main>
