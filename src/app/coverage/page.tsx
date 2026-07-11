@@ -167,7 +167,7 @@ export default function CoveragePage() {
                   <Link href="/coverage/map" className="btn btn-primary" style={{ padding: "12px 24px", fontSize: "0.9rem" }}>
                     🗺️ Use Interactive Map
                   </Link>
-                  <a href="https://wa.me/5926092487?text=Hi!%20I%20want%20to%20check%20if%20you%20cover%20my%20area.%20I%27m%20located%20at%20" target="_blank" rel="noopener" className="btn btn-outline" style={{ padding: "12px 24px", fontSize: "0.9rem" }}>
+                  <a href="https://wa.me/5927346480?text=Hi!%20I%20want%20to%20check%20if%20you%20cover%20my%20area.%20I%27m%20located%20at%20" target="_blank" rel="noopener" className="btn btn-outline" style={{ padding: "12px 24px", fontSize: "0.9rem" }}>
                     💬 Ask on WhatsApp
                   </a>
                 </div>
