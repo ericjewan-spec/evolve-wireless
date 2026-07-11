@@ -59,7 +59,7 @@ export default function PayPage() {
                 <button onClick={() => { setStep("lookup"); setAccountId(""); setAmount(""); setPhone(""); setMethod(""); setStatus("idle"); }} className="btn btn-primary" style={{ padding: "10px 24px", fontSize: "0.85rem" }}>
                   Make Another Payment
                 </button>
-                <a href="https://wa.me/5926092487?text=Hi!%20I%20just%20made%20a%20payment%20on%20your%20website.%20Can%20you%20confirm?" target="_blank" rel="noopener" className="btn btn-outline" style={{ padding: "10px 24px", fontSize: "0.85rem" }}>
+                <a href="https://wa.me/5927346480?text=Hi!%20I%20just%20made%20a%20payment%20on%20your%20website.%20Can%20you%20confirm?" target="_blank" rel="noopener" className="btn btn-outline" style={{ padding: "10px 24px", fontSize: "0.85rem" }}>
                   💬 Confirm on WhatsApp
                 </a>
               </div>
@@ -97,7 +97,7 @@ export default function PayPage() {
                     />
                   </div>
                   <p style={{ fontSize: "0.78rem", color: "var(--text-muted)", marginBottom: "20px" }}>
-                    Your account ID is on your invoice or signup confirmation. Not sure? <a href="https://wa.me/5926092487?text=Hi!%20I%20need%20my%20account%20ID%20to%20make%20a%20payment." target="_blank" rel="noopener" style={{ color: "var(--teal)" }}>Ask on WhatsApp</a>.
+                    Your account ID is on your invoice or signup confirmation. Not sure? <a href="https://wa.me/5927346480?text=Hi!%20I%20need%20my%20account%20ID%20to%20make%20a%20payment." target="_blank" rel="noopener" style={{ color: "var(--teal)" }}>Ask on WhatsApp</a>.
                   </p>
                   <button onClick={handleLookup} disabled={!accountId.trim()} className="btn btn-primary w-full justify-center" style={{ opacity: !accountId.trim() ? 0.5 : 1 }}>
                     Continue →
@@ -203,7 +203,7 @@ export default function PayPage() {
           <div style={{ marginTop: "32px", padding: "20px", borderRadius: "var(--r-sm)", border: "1px dashed var(--divider)", textAlign: "center" }}>
             <p style={{ fontSize: "0.88rem", color: "var(--text2)", fontWeight: 500, marginBottom: "8px" }}>Prefer to pay in person?</p>
             <p style={{ fontSize: "0.82rem", color: "var(--text3)" }}>
-              You can also pay via any MMG agent location, or contact us on <a href="https://wa.me/5926092487" target="_blank" rel="noopener" style={{ color: "var(--teal)", fontWeight: 600 }}>WhatsApp</a> for other payment arrangements.
+              You can also pay via any MMG agent location, or contact us on <a href="https://wa.me/5927346480" target="_blank" rel="noopener" style={{ color: "var(--teal)", fontWeight: 600 }}>WhatsApp</a> for other payment arrangements.
             </p>
           </div>
         </div>
