@@ -120,7 +120,7 @@ export default function Hero() {
           {[
             { href: "/plans", cls: "btn btn-primary", label: "Check Your Coverage — It's Free", delay: 0.48 },
             { href: "/plans", cls: "btn btn-ghost", label: "See Our Plans", delay: 0.54 },
-            { href: "https://wa.me/5926092487", cls: "btn btn-outline", label: "💬 WhatsApp Us", delay: 0.60 },
+            { href: "https://wa.me/5927346480", cls: "btn btn-outline", label: "💬 WhatsApp Us", delay: 0.60 },
           ].map((cta) => (
             <Link
               key={cta.label}
