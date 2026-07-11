@@ -254,7 +254,7 @@ export default function SolarCalculatorPage() {
                     Get Exact Quote →
                   </Link>
                   <a
-                    href={`https://wa.me/5926092487?text=${encodeURIComponent(`Hi! I used your solar calculator. I'm interested in a ${systemKw.toFixed(1)}kW system (${panelCount} panels${wantBattery ? `, ${batteryHours}h battery` : ""}). Estimated cost: GYD ${fmt(totalCost)}. Can I get an exact quote?`)}`}
+                    href={`https://wa.me/5927346480?text=${encodeURIComponent(`Hi! I used your solar calculator. I'm interested in a ${systemKw.toFixed(1)}kW system (${panelCount} panels${wantBattery ? `, ${batteryHours}h battery` : ""}). Estimated cost: GYD ${fmt(totalCost)}. Can I get an exact quote?`)}`}
                     target="_blank" rel="noopener"
                     className="btn btn-outline"
                     style={{ flex: 1, justifyContent: "center" }}
