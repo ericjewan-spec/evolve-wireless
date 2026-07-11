@@ -299,7 +299,7 @@ export default function HomePage() {
               { q: "What happens if my internet goes down in the middle of the night?", a: "You message us on WhatsApp — we monitor it around the clock. For known outages, we broadcast a status update before you wake up. For individual issues, a technician responds within one hour." },
               { q: "How fast is the installation, really?", a: "Our average is 48 hours from sign-up to live internet. For ECD customers, same-week installation is standard. For Port Kaituma, Mabaruma, Matthews Ridge and Baramita, we book within 7 days." },
               { q: "Do I need to buy my own equipment?", a: "No. Your plan includes a free router. Our technician installs everything — the outdoor antenna, cabling, and indoor router. You do not need to buy, source, or configure anything." },
-              { q: "Can I upgrade or downgrade my plan?", a: "Yes, any time. Contact us via WhatsApp at +592 609-2487 and we adjust your plan from the next billing cycle. No fees, no penalties." },
+              { q: "Can I upgrade or downgrade my plan?", a: "Yes, any time. Contact us via WhatsApp at +592 734-6480 and we adjust your plan from the next billing cycle. No fees, no penalties." },
               { q: "Is Starlink available through Evolve?", a: "Yes. We supply, install, and support Starlink satellite systems across Guyana's most remote communities. Installation is available at cost — contact us for pricing and availability in your area." },
             ].map((faq, i) => (
               <div key={i} className="reveal py-5" style={{ borderTop: "1px solid rgba(44, 24, 16, 0.08)" }}>
@@ -312,7 +312,7 @@ export default function HomePage() {
           <div className="text-center mt-8 reveal">
             <p className="text-sm mb-3" style={{ color: "var(--text3)" }}>Still have questions?</p>
             <div className="flex gap-3 justify-center flex-wrap">
-              <a href="https://wa.me/5926092487" className="btn btn-cyan" target="_blank" rel="noopener" style={{ padding: "10px 20px", fontSize: "0.85rem" }}>💬 WhatsApp Us</a>
+              <a href="https://wa.me/5927346480" className="btn btn-cyan" target="_blank" rel="noopener" style={{ padding: "10px 20px", fontSize: "0.85rem" }}>💬 WhatsApp Us</a>
               <Link href="/portal/support" className="btn btn-ghost" style={{ padding: "10px 20px", fontSize: "0.85rem" }}>🎫 Submit a Ticket</Link>
             </div>
           </div>
@@ -334,7 +334,7 @@ export default function HomePage() {
           <div className="flex gap-3 justify-center flex-wrap">
             <Link href="/coverage/map" className="btn btn-primary">Check My Coverage →</Link>
             <Link href="/signup" className="btn btn-outline">Sign Up Now</Link>
-            <a href="https://wa.me/5926092487" className="btn btn-cyan" target="_blank" rel="noopener">💬 WhatsApp Us</a>
+            <a href="https://wa.me/5927346480" className="btn btn-cyan" target="_blank" rel="noopener">💬 WhatsApp Us</a>
           </div>
         </div>
       </div>
