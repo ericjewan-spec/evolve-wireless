@@ -172,7 +172,7 @@ export default function Navbar() {
             <Link href="/plans" className="btn btn-primary justify-center" style={{ padding: "14px 24px", fontSize: "0.95rem" }} onClick={() => setMenuOpen(false)}>
               Sign Up Now
             </Link>
-            <a href="https://wa.me/5926092487" className="btn btn-cyan justify-center" style={{ padding: "14px 24px", fontSize: "0.95rem" }} target="_blank" rel="noopener">
+            <a href="https://wa.me/5927346480" className="btn btn-cyan justify-center" style={{ padding: "14px 24px", fontSize: "0.95rem" }} target="_blank" rel="noopener">
               💬 WhatsApp Us
             </a>
           </div>
