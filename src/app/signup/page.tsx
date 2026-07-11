@@ -131,7 +131,7 @@ export default function SignupPage() {
           </p>
           <div className="flex gap-3 justify-center flex-wrap">
             <Link href="/portal" className="btn btn-primary">Go to Dashboard</Link>
-            <a href="https://wa.me/5926092487" className="btn btn-cyan" target="_blank" rel="noopener">💬 WhatsApp Us</a>
+            <a href="https://wa.me/5927346480" className="btn btn-cyan" target="_blank" rel="noopener">💬 WhatsApp Us</a>
           </div>
         </div>
       </div>
