@@ -4,7 +4,7 @@ import WhatsAppFAB from "@/components/WhatsAppFAB";
 import LeadForm from "@/components/LeadForm";
 
 export default function ContactPage() {
-  const waNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "5926092487";
+  const waNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "5927346480";
 
   return (
     <>
@@ -45,7 +45,7 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <h3 className="font-['Syne'] font-bold text-base mb-0.5">WhatsApp (Preferred)</h3>
-                    <p className="text-sm text-[var(--cyan)]">+592 609-2487</p>
+                    <p className="text-sm text-[var(--cyan)]">+592 734-6480</p>
                     <p className="text-xs text-[var(--text3)] mt-1">Fastest way to reach us — usually under 1 hour</p>
                   </div>
                 </a>
