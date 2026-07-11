@@ -22,7 +22,7 @@ export default function QuotePage() {
     monthly_bill: "", roof_type: "", has_generator: "", battery_interest: "", timeline: "", message: "",
   });
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
-  const WA = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "5926092487";
+  const WA = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "5927346480";
 
   const update = (k: string, v: string) => setForm((p) => ({ ...p, [k]: v }));
 
