@@ -104,7 +104,7 @@ export default function BillingPage() {
         <div className="card p-6 mt-8" style={{ background: "rgba(42,157,143,0.04)", borderColor: "rgba(42,157,143,0.15)" }}>
           <h3 className="font-bold mb-2" style={{ fontFamily: "'Bricolage Grotesque', serif" }}>How to Pay</h3>
           <div className="text-sm space-y-2" style={{ color: "var(--text2)" }}>
-            <p><strong>WhatsApp:</strong> Message us at <a href="https://wa.me/5926092487" target="_blank" rel="noopener" style={{ color: "var(--teal)" }}>+592 609-2487</a> with your invoice number</p>
+            <p><strong>WhatsApp:</strong> Message us at <a href="https://wa.me/5927346480" target="_blank" rel="noopener" style={{ color: "var(--teal)" }}>+592 734-6480</a> with your invoice number</p>
             <p><strong>Bank Transfer:</strong> Contact us for our banking details and use your invoice number as reference</p>
             <p><strong>Cash:</strong> Pay at our office during business hours (Mon–Fri 8am–6pm, Sat 9am–4pm)</p>
           </div>
