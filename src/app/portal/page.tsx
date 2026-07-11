@@ -92,7 +92,7 @@ export default function PortalDashboard() {
             { label: "Pay Bill", href: "/portal/billing", icon: "💳", color: "var(--terracotta)" },
             { label: "Get Support", href: "/portal/support", icon: "🎫", color: "var(--teal)" },
             { label: "My Account", href: "/portal/account", icon: "👤", color: "var(--gold)" },
-            { label: "WhatsApp Us", href: "https://wa.me/5926092487", icon: "💬", color: "#25D366" },
+            { label: "WhatsApp Us", href: "https://wa.me/5927346480", icon: "💬", color: "#25D366" },
           ].map((a) => (
             <Link key={a.label} href={a.href} className="card p-5 text-center" style={{ cursor: "pointer" }}>
               <div className="text-2xl mb-2">{a.icon}</div>
