@@ -83,13 +83,14 @@ export default function SimplePayrollPage() {
         supabase.from("payroll_settings").select("id, nis_employee_rate, nis_employer_rate, nis_monthly_ceiling").eq("active", true).maybeSingle(),
       ]);
       if (empRes.data) setEmployees(empRes.data as Employee[]);
-      if (setRes.data) {
+      const sd = setRes.data;
+      if (sd) {
         setSettings(s => ({
           ...s,
-          id: setRes.data.id,
-          nisRate: Number(setRes.data.nis_employee_rate) || 0.056,
-          nisEmployerRate: Number(setRes.data.nis_employer_rate) || 0.084,
-          nisCeilingMonthly: Number(setRes.data.nis_monthly_ceiling) || 280000,
+          id: sd.id,
+          nisRate: Number(sd.nis_employee_rate) || 0.056,
+          nisEmployerRate: Number(sd.nis_employer_rate) || 0.084,
+          nisCeilingMonthly: Number(sd.nis_monthly_ceiling) || 280000,
         }));
       }
       setLoading(false);
