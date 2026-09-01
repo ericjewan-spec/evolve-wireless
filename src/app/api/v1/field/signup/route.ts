@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase-service";
 import { provisionInstalledClient, attachClientDocuments } from "@/lib/uisp-sync";
 import { appendInstallToSheet } from "@/lib/sheets";
+import { generateContractPdf } from "@/lib/contract-pdf";
 import { slackNewSignup } from "@/lib/slack";
 
 export const dynamic = "force-dynamic";
@@ -157,6 +158,32 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // 3b2) Generate the contract PDF and file it on the client's UISP Documents.
+  if (uispClientId && accountNumber) {
+    try {
+      const pdfBytes = await generateContractPdf({
+        accountNumber,
+        fullName,
+        installDate: installDate || new Date().toISOString().slice(0, 10),
+        baseMbps: Number(baseMbps) || 0,
+        monthlyGyd: Number(monthlyGyd) || 0,
+        region: region || "ecd",
+        address,
+        village: village || null,
+        phone,
+        wifiName: wifiName || null,
+        wifiPassword: wifiPassword || null,
+        signatureDataUrl: subscriberSignature || null,
+      });
+      const uploaded = await attachClientDocuments(uispClientId, [
+        { name: `${accountNumber}-contract.pdf`, base64: Buffer.from(pdfBytes).toString("base64") },
+      ]);
+      console.log(`UISP: contract PDF ${uploaded ? "attached" : "NOT attached"} for ${accountNumber}`);
+    } catch (err) {
+      console.error("Contract PDF attach error:", (err as Error).message);
+    }
+  }
+
   // 3c) Append to the Google Sheet payment ledger (best effort, non-blocking).
   try {
     await appendInstallToSheet({
@@ -169,6 +196,32 @@ export async function POST(req: NextRequest) {
       region: region || "ecd",
     });
   } catch { /* non-blocking */ }
+
+  // 3b2) Generate the contract PDF and file it on the client's UISP Documents.
+  if (uispClientId && accountNumber) {
+    try {
+      const pdfBytes = await generateContractPdf({
+        accountNumber,
+        fullName,
+        installDate: installDate || new Date().toISOString().slice(0, 10),
+        baseMbps: Number(baseMbps) || 0,
+        monthlyGyd: Number(monthlyGyd) || 0,
+        region: region || "ecd",
+        address,
+        village: village || null,
+        phone,
+        wifiName: wifiName || null,
+        wifiPassword: wifiPassword || null,
+        signatureDataUrl: subscriberSignature || null,
+      });
+      const uploaded = await attachClientDocuments(uispClientId, [
+        { name: `${accountNumber}-contract.pdf`, base64: Buffer.from(pdfBytes).toString("base64") },
+      ]);
+      console.log(`UISP: contract PDF ${uploaded ? "attached" : "NOT attached"} for ${accountNumber}`);
+    } catch (err) {
+      console.error("Contract PDF attach error:", (err as Error).message);
+    }
+  }
 
   // 3c) Append to the Google Sheet payment ledger (best effort, non-blocking).
   try {
