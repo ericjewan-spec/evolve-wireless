@@ -313,6 +313,7 @@ export default function InstallPage() {
       `Plan: ${plan?.name} — GYD ${plan?.price_gyd.toLocaleString("en-GY")}/month.\n` +
       (form.wifiName ? `WiFi: ${form.wifiName}${form.wifiPassword ? ` / ${form.wifiPassword}` : ""}\n` : "") +
       `\nYour service agreement: ${result.contractUrl}\n\n` +
+      `Need help anytime? Chat with our support agent on WhatsApp: wa.me/5927346480\n` +
       `Technical Support: 609-2487`;
     const waLink = `https://wa.me/${waNumber(form.phone)}?text=${encodeURIComponent(msg)}`;
 
