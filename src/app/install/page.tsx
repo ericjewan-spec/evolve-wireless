@@ -388,6 +388,23 @@ export default function InstallPage() {
         </Field>
         <Field label="Village / Area"><input style={inp} value={form.village} onChange={(e) => set("village", e.target.value)} /></Field>
         <Field label="Address *"><input style={inp} value={form.address} onChange={(e) => set("address", e.target.value)} /></Field>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+          <button onClick={captureGps} disabled={gpsBusy}
+            style={{ padding: 13, borderRadius: 10, border: gps?.src === "gps" ? "2px solid " + GREEN : "1.5px dashed #bbb", background: gps?.src === "gps" ? "#F0F7F2" : "#fff", color: gps?.src === "gps" ? GREEN : BROWN, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>
+            {gpsBusy ? "Getting GPS…" : "📍 Use my GPS"}
+          </button>
+          <button onClick={() => setShowMap(true)}
+            style={{ padding: 13, borderRadius: 10, border: gps?.src === "pin" ? "2px solid " + GREEN : "1.5px dashed #bbb", background: gps?.src === "pin" ? "#F0F7F2" : "#fff", color: gps?.src === "pin" ? GREEN : BROWN, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>
+            🗺 Pin on map
+          </button>
+        </div>
+        {gps && (
+          <div style={{ fontSize: 12, color: GREEN, textAlign: "center", fontWeight: 600 }}>
+            {gps.src === "pin" ? "Pinned on map" : `GPS captured (±${gps.acc}m)`} · {gps.lat.toFixed(6)}, {gps.lon.toFixed(6)}
+          </div>
+        )}
+        {!gps && <div style={{ fontSize: 12, color: "#888", textAlign: "center" }}>Use GPS while standing at the premises, or pin the exact house on the satellite map.</div>}
+        {gpsError && <div style={{ color: "#B42318", fontSize: 13 }}>{gpsError}</div>}
       </Section>
 
       <Section title="Plan">
@@ -421,26 +438,6 @@ export default function InstallPage() {
         <Field label="Technician Name"><input style={inp} value={form.technicianName} onChange={(e) => set("technicianName", e.target.value)} /></Field>
         <Field label="Install Date"><input style={inp} type="date" value={form.installDate} onChange={(e) => set("installDate", e.target.value)} /></Field>
         <Field label="Landlord Name (if applicable)"><input style={inp} value={form.landlordName} onChange={(e) => set("landlordName", e.target.value)} /></Field>
-      </Section>
-
-      <Section title="Customer Location">
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-          <button onClick={captureGps} disabled={gpsBusy}
-            style={{ padding: 13, borderRadius: 10, border: gps?.src === "gps" ? "2px solid " + GREEN : "1.5px dashed #bbb", background: gps?.src === "gps" ? "#F0F7F2" : "#fff", color: gps?.src === "gps" ? GREEN : BROWN, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>
-            {gpsBusy ? "Getting GPS…" : "📍 Use my GPS"}
-          </button>
-          <button onClick={() => setShowMap(true)}
-            style={{ padding: 13, borderRadius: 10, border: gps?.src === "pin" ? "2px solid " + GREEN : "1.5px dashed #bbb", background: gps?.src === "pin" ? "#F0F7F2" : "#fff", color: gps?.src === "pin" ? GREEN : BROWN, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>
-            🗺 Pin on map
-          </button>
-        </div>
-        {gps && (
-          <div style={{ fontSize: 12, color: GREEN, textAlign: "center", fontWeight: 600 }}>
-            {gps.src === "pin" ? "Pinned on map" : `GPS captured (±${gps.acc}m)`} · {gps.lat.toFixed(6)}, {gps.lon.toFixed(6)}
-          </div>
-        )}
-        {!gps && <div style={{ fontSize: 12, color: "#888", textAlign: "center" }}>Use GPS while standing at the premises, or pin the exact house on the satellite map.</div>}
-        {gpsError && <div style={{ color: "#B42318", fontSize: 13 }}>{gpsError}</div>}
       </Section>
 
       <Section title="Install Photos">
