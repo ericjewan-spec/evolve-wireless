@@ -143,7 +143,8 @@ export default function InstallPage() {
   };
 
   // ── GPS location ──
-  const [gps, setGps] = useState<{ lat: number; lon: number; acc: number } | null>(null);
+  const [gps, setGps] = useState<{ lat: number; lon: number; acc: number | null; src: "gps" | "pin" } | null>(null);
+  const [showMap, setShowMap] = useState(false);
   const [gpsBusy, setGpsBusy] = useState(false);
   const [gpsError, setGpsError] = useState("");
 
@@ -153,7 +154,7 @@ export default function InstallPage() {
     setGpsError("");
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        setGps({ lat: pos.coords.latitude, lon: pos.coords.longitude, acc: Math.round(pos.coords.accuracy) });
+        setGps({ lat: pos.coords.latitude, lon: pos.coords.longitude, acc: Math.round(pos.coords.accuracy), src: "gps" });
         setGpsBusy(false);
       },
       (err) => {
@@ -422,12 +423,23 @@ export default function InstallPage() {
         <Field label="Landlord Name (if applicable)"><input style={inp} value={form.landlordName} onChange={(e) => set("landlordName", e.target.value)} /></Field>
       </Section>
 
-      <Section title="Customer Location (GPS)">
-        <button onClick={captureGps} disabled={gpsBusy}
-          style={{ width: "100%", padding: 13, borderRadius: 10, border: gps ? "2px solid " + GREEN : "1.5px dashed #bbb", background: gps ? "#F0F7F2" : "#fff", color: gps ? GREEN : BROWN, fontSize: 15, fontWeight: 600, cursor: "pointer" }}>
-          {gpsBusy ? "Getting GPS fix…" : gps ? `📍 Location captured (±${gps.acc}m) — tap to retake` : "📍 Capture customer location"}
-        </button>
-        {gps && <div style={{ fontSize: 12, color: "#888", textAlign: "center" }}>{gps.lat.toFixed(6)}, {gps.lon.toFixed(6)} — stand at the customer's premises when capturing</div>}
+      <Section title="Customer Location">
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+          <button onClick={captureGps} disabled={gpsBusy}
+            style={{ padding: 13, borderRadius: 10, border: gps?.src === "gps" ? "2px solid " + GREEN : "1.5px dashed #bbb", background: gps?.src === "gps" ? "#F0F7F2" : "#fff", color: gps?.src === "gps" ? GREEN : BROWN, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>
+            {gpsBusy ? "Getting GPS…" : "📍 Use my GPS"}
+          </button>
+          <button onClick={() => setShowMap(true)}
+            style={{ padding: 13, borderRadius: 10, border: gps?.src === "pin" ? "2px solid " + GREEN : "1.5px dashed #bbb", background: gps?.src === "pin" ? "#F0F7F2" : "#fff", color: gps?.src === "pin" ? GREEN : BROWN, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>
+            🗺 Pin on map
+          </button>
+        </div>
+        {gps && (
+          <div style={{ fontSize: 12, color: GREEN, textAlign: "center", fontWeight: 600 }}>
+            {gps.src === "pin" ? "Pinned on map" : `GPS captured (±${gps.acc}m)`} · {gps.lat.toFixed(6)}, {gps.lon.toFixed(6)}
+          </div>
+        )}
+        {!gps && <div style={{ fontSize: 12, color: "#888", textAlign: "center" }}>Use GPS while standing at the premises, or pin the exact house on the satellite map.</div>}
         {gpsError && <div style={{ color: "#B42318", fontSize: 13 }}>{gpsError}</div>}
       </Section>
 
@@ -474,6 +486,15 @@ export default function InstallPage() {
 
       {error && <div style={{ background: "#FDECEA", color: "#B42318", padding: 12, borderRadius: 10, marginBottom: 14, fontSize: 14 }}>{error}</div>}
 
+      {showMap && (
+        <MapPicker
+          initial={gps}
+          region={region}
+          onClose={() => setShowMap(false)}
+          onUse={(lat, lon) => { setGps({ lat, lon, acc: null, src: "pin" }); setShowMap(false); }}
+        />
+      )}
+
       <button onClick={submit} disabled={!valid || loading || photosUploading}
         style={{
           width: "100%", padding: 16, borderRadius: 12, border: "none", fontSize: 16, fontWeight: 700,
@@ -482,6 +503,93 @@ export default function InstallPage() {
         }}>
         {loading ? "Signing up…" : photosUploading ? "Waiting for photos…" : "Complete Sign-Up"}
       </button>
+    </div>
+  );
+}
+
+/** Satellite map pin picker (Leaflet + Esri World Imagery). Tap or drag to set the pin. */
+function MapPicker({ initial, region, onUse, onClose }: {
+  initial: { lat: number; lon: number } | null;
+  region: string;
+  onUse: (lat: number, lon: number) => void;
+  onClose: () => void;
+}) {
+  const mapEl = useRef<HTMLDivElement>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const refs = useRef<any>({});
+  const [ready, setReady] = useState(false);
+  const [sat, setSat] = useState(true);
+
+  useEffect(() => {
+    let dead = false;
+    (async () => {
+      if (!document.getElementById("leaflet-css")) {
+        const link = document.createElement("link");
+        link.id = "leaflet-css";
+        link.rel = "stylesheet";
+        link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
+        document.head.appendChild(link);
+        await new Promise((r) => { link.onload = r; setTimeout(r, 1500); });
+      }
+      const L = (await import("leaflet")).default;
+      if (dead || !mapEl.current || refs.current.map) return;
+      const start = initial
+        ? { lat: initial.lat, lon: initial.lon, zoom: 18 }
+        : region === "region1"
+          ? { lat: 8.2001, lon: -59.7805, zoom: 14 }   // Mabaruma
+          : { lat: 6.8064, lon: -58.1030, zoom: 14 };  // ECD (Success area)
+      const map = L.map(mapEl.current, { zoomControl: true }).setView([start.lat, start.lon], start.zoom);
+      const satLayer = L.tileLayer(
+        "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+        { maxZoom: 19, attribution: "Tiles &copy; Esri" });
+      const streetLayer = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+        { maxZoom: 19, attribution: "&copy; OpenStreetMap" });
+      satLayer.addTo(map);
+      const icon = L.divIcon({ html: "<div style=\"font-size:34px;line-height:34px\">📍</div>", className: "", iconSize: [34, 34], iconAnchor: [17, 32] });
+      const marker = L.marker([start.lat, start.lon], { draggable: true, icon }).addTo(map);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      map.on("click", (e: any) => marker.setLatLng(e.latlng));
+      refs.current = { map, marker, satLayer, streetLayer };
+      setReady(true);
+    })();
+    return () => { dead = true; if (refs.current.map) { refs.current.map.remove(); refs.current = {}; } };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const toggleLayer = () => {
+    const { map, satLayer, streetLayer } = refs.current;
+    if (!map) return;
+    if (sat) { map.removeLayer(satLayer); streetLayer.addTo(map); } else { map.removeLayer(streetLayer); satLayer.addTo(map); }
+    setSat(!sat);
+  };
+
+  const confirm = () => {
+    const m = refs.current.marker;
+    if (!m) return;
+    const ll = m.getLatLng();
+    onUse(ll.lat, ll.lng);
+  };
+
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 200, display: "flex", alignItems: "flex-end" }}>
+      <div style={{ background: "#fff", width: "100%", borderRadius: "16px 16px 0 0", padding: 12, maxHeight: "92vh", display: "flex", flexDirection: "column", gap: 10 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div style={{ fontWeight: 700, color: "#4A3728" }}>Pin the customer&rsquo;s exact location</div>
+          <button onClick={onClose} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "#4A3728" }}>✕</button>
+        </div>
+        <div style={{ position: "relative" }}>
+          <div ref={mapEl} style={{ height: "56vh", borderRadius: 12, overflow: "hidden", background: "#e9e4da" }} />
+          <button onClick={toggleLayer}
+            style={{ position: "absolute", top: 10, right: 10, zIndex: 500, background: "#fff", border: "1px solid #ccc", borderRadius: 8, padding: "6px 10px", fontSize: 12, fontWeight: 600, cursor: "pointer", color: "#4A3728" }}>
+            {sat ? "🗺 Streets" : "🛰 Satellite"}
+          </button>
+        </div>
+        <div style={{ fontSize: 12, color: "#888", textAlign: "center" }}>Tap the map or drag the 📍 onto the customer&rsquo;s roof, then confirm.</div>
+        <button onClick={confirm} disabled={!ready}
+          style={{ width: "100%", padding: 15, borderRadius: 12, border: "none", fontSize: 16, fontWeight: 700, color: "#fff", background: ready ? GREEN : "#B9C6BE", cursor: ready ? "pointer" : "wait" }}>
+          Use this location
+        </button>
+      </div>
     </div>
   );
 }
