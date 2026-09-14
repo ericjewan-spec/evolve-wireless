@@ -80,8 +80,7 @@ export default function InstallPage() {
   const [region, setRegion] = useState("ecd");
   const [planId, setPlanId] = useState("");
   const [form, setForm] = useState({
-    fullName: "", phone: "", email: "", village: "", address: "",
-    equipment: "Ubiquiti LiteBeam AC Gen2",
+    fullName: "", phone: "", village: "", address: "",
     wifiName: "", wifiPassword: "", landlordName: "", technicianName: "",
     installDate: today(),
   });
@@ -232,7 +231,6 @@ export default function InstallPage() {
         body: JSON.stringify({
           fullName: form.fullName,
           phone: form.phone,
-          email: form.email,
           region,
           village: form.village,
           address: form.address,
@@ -241,7 +239,6 @@ export default function InstallPage() {
           monthlyGyd: plan?.price_gyd,
           baseMbps: plan?.speed_down_mbps,
           installFeeGyd: 20000,
-          equipment: form.equipment,
           wifiName: form.wifiName,
           wifiPassword: form.wifiPassword,
           landlordName: form.landlordName,
@@ -353,7 +350,7 @@ export default function InstallPage() {
           Open Contract
         </a>
 
-        <button onClick={() => { setResult(null); setPlanId(""); setForm({ ...form, fullName: "", phone: "", email: "", village: "", address: "", wifiName: "", wifiPassword: "", landlordName: "" }); clearSig(); }}
+        <button onClick={() => { setResult(null); setPlanId(""); setForm({ ...form, fullName: "", phone: "", village: "", address: "", wifiName: "", wifiPassword: "", landlordName: "" }); clearSig(); }}
           style={{ display: "block", width: "100%", background: "none", border: "none", color: BROWN, padding: 12, cursor: "pointer", fontSize: 14 }}>
           + Sign up another customer
         </button>
@@ -375,7 +372,6 @@ export default function InstallPage() {
       <Section title="Customer">
         <Field label="Full Name *"><input style={inp} value={form.fullName} onChange={(e) => set("fullName", e.target.value)} /></Field>
         <Field label="WhatsApp Number *"><input style={inp} inputMode="tel" placeholder="592XXXXXXX" value={form.phone} onChange={(e) => set("phone", e.target.value)} /></Field>
-        <Field label="Email (optional)"><input style={inp} inputMode="email" value={form.email} onChange={(e) => set("email", e.target.value)} /></Field>
       </Section>
 
       <Section title="Service Address">
@@ -411,13 +407,7 @@ export default function InstallPage() {
         </div>
       </Section>
 
-      <Section title="Equipment & Router">
-        <Field label="Equipment">
-          <select style={inp} value={form.equipment} onChange={(e) => set("equipment", e.target.value)}>
-            <option>Ubiquiti LiteBeam AC Gen2</option>
-            <option>Ubiquiti NanoStation Gen2</option>
-          </select>
-        </Field>
+      <Section title="WiFi Details">
         <Field label="WiFi Name"><input style={inp} value={form.wifiName} onChange={(e) => set("wifiName", e.target.value)} /></Field>
         <Field label="WiFi Password"><input style={inp} value={form.wifiPassword} onChange={(e) => set("wifiPassword", e.target.value)} /></Field>
       </Section>
