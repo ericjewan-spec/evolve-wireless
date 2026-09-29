@@ -112,7 +112,7 @@ export default function Hero() {
           }}
         >
           Fast, reliable wireless internet for homes and businesses across East Coast Demerara,
-          Region 1, Port Kaituma, Mabaruma, Matthews Ridge and Baramita — installed in 48 hours.
+          Region 1, Port Kaituma, Mabaruma, Matthews Ridge, Baramita and Yarakita — installed in 48 hours.
         </p>
 
         {/* CTAs — spring entrance with 60ms stagger (from motion spec) */}

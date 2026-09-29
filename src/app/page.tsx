@@ -154,7 +154,7 @@ export default function HomePage() {
               { icon: "🛰️", title: "Reach the Unreachable — Starlink", desc: "Deep in Region 1, miles from the nearest tower — your location is not your limitation. We install and support Starlink satellite systems across Guyana's most remote communities.", tags: ["Starlink Install", "Remote Sites", "Ongoing Support"] },
               { icon: "🗼", title: "Tower Build & Maintenance", desc: "End-to-end tower construction, equipment mounting, alignment, and ongoing maintenance. We design, build, and operate wireless towers that expand coverage.", tags: ["Tower Erection", "Sector Antennas", "Maintenance Plans"] },
               { icon: "📶", title: "Managed WiFi Solutions", desc: "Hotel-grade WiFi for resorts, schools, offices, and large venues. We design, deploy, and manage enterprise WiFi systems with centralized monitoring.", tags: ["Ubiquiti UniFi", "Multi-Zone", "Captive Portal"] },
-              { icon: "📡", title: "Remote Area Installations", desc: "We specialize in bringing internet to out-of-town and hard-to-reach communities. Port Kaituma, Mabaruma, Matthews Ridge, Baramita — we're already there.", tags: ["Region 1", "Long-Range Links", "Site Surveys"] },
+              { icon: "📡", title: "Remote Area Installations", desc: "We specialize in bringing internet to out-of-town and hard-to-reach communities. Port Kaituma, Mabaruma, Matthews Ridge, Baramita, Yarakita — we're already there.", tags: ["Region 1", "Long-Range Links", "Site Surveys"] },
             ].map((s, i) => (
               <div key={s.title} className={`card p-8 cursor-default reveal ${i > 0 ? `reveal-delay-${Math.min(i, 3)}` : ""}`}>
                 <div className="text-3xl mb-5">{s.icon}</div>
@@ -239,7 +239,7 @@ export default function HomePage() {
           </div>
 
           {/* Region 1 Plans */}
-          <h3 className="mt-14 mb-6 text-lg font-bold reveal" style={{ fontFamily: "'Bricolage Grotesque', serif" }}>📡 Region 1 Plans — Port Kaituma · Mabaruma · Matthews Ridge · Baramita</h3>
+          <h3 className="mt-14 mb-6 text-lg font-bold reveal" style={{ fontFamily: "'Bricolage Grotesque', serif" }}>📡 Region 1 Plans — Port Kaituma · Mabaruma · Matthews Ridge · Baramita · Yarakita</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5 reveal reveal-delay-1">
             {[
               { name: "Essential", price: "10,000", features: ["Reliable connectivity", "Browsing, email & WhatsApp", "1–3 devices", "Local tech support"] },
@@ -297,7 +297,7 @@ export default function HomePage() {
           <div className="mt-10 space-y-0">
             {[
               { q: "What happens if my internet goes down in the middle of the night?", a: "You message us on WhatsApp — we monitor it around the clock. For known outages, we broadcast a status update before you wake up. For individual issues, a technician responds within one hour." },
-              { q: "How fast is the installation, really?", a: "Our average is 48 hours from sign-up to live internet. For ECD customers, same-week installation is standard. For Port Kaituma, Mabaruma, Matthews Ridge and Baramita, we book within 7 days." },
+              { q: "How fast is the installation, really?", a: "Our average is 48 hours from sign-up to live internet. For ECD customers, same-week installation is standard. For Port Kaituma, Mabaruma, Matthews Ridge, Baramita and Yarakita, we book within 7 days." },
               { q: "Do I need to buy my own equipment?", a: "No. Your plan includes a free router. Our technician installs everything — the outdoor antenna, cabling, and indoor router. You do not need to buy, source, or configure anything." },
               { q: "Can I upgrade or downgrade my plan?", a: "Yes, any time. Contact us via WhatsApp at +592 734-6480 and we adjust your plan from the next billing cycle. No fees, no penalties." },
               { q: "Is Starlink available through Evolve?", a: "Yes. We supply, install, and support Starlink satellite systems across Guyana's most remote communities. Installation is available at cost — contact us for pricing and availability in your area." },
@@ -368,7 +368,7 @@ export default function HomePage() {
                   <span className="text-lg">📍</span>
                   <div>
                     <div className="text-sm font-semibold" style={{ color: "var(--text)" }}>Service Areas</div>
-                    <span className="text-sm" style={{ color: "var(--text3)" }}>East Coast Demerara · Port Kaituma · Mabaruma · Matthews Ridge · Baramita</span>
+                    <span className="text-sm" style={{ color: "var(--text3)" }}>East Coast Demerara · Port Kaituma · Mabaruma · Matthews Ridge · Baramita · Yarakita</span>
                   </div>
                 </div>
               </div>

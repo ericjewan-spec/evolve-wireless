@@ -18,6 +18,7 @@ const TOWERS = [
   { id: "baramita", name: "Baramita Tower", location: "Baramita, Region 1", lat: 7.3501, lng: -60.4880, radiusKm: 4, color: "#E9B44C" },
   { id: "hosororo", name: "Hosororo Tower", location: "Hosororo, Region 1", lat: 8.1667, lng: -59.8000, radiusKm: 4, color: "#E9B44C" },
   { id: "whitewater", name: "Whitewater Tower", location: "Whitewater, Region 1", lat: 8.1450, lng: -59.8200, radiusKm: 4, color: "#E9B44C" },
+  { id: "yarakita", name: "Yarakita Tower", location: "Yarakita, Region 1", lat: 8.0152, lng: -59.9553, radiusKm: 4, color: "#E9B44C" },
   { id: "charity", name: "Charity Tower", location: "Charity, Essequibo", lat: 7.4000, lng: -58.6000, radiusKm: 4, color: "#8B6F4E" },
 ];
 
@@ -222,7 +223,7 @@ export default function CoverageMapPage() {
               <span style={{ width: "10px", height: "10px", borderRadius: "50%", background: "#2A9D8F" }} /> New Amsterdam
             </span>
             <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-              <span style={{ width: "10px", height: "10px", borderRadius: "50%", background: "#E9B44C" }} /> Region 1 (Port Kaituma, Mabaruma, Matthews Ridge, Baramita, Hosororo, Whitewater)
+              <span style={{ width: "10px", height: "10px", borderRadius: "50%", background: "#E9B44C" }} /> Region 1 (Port Kaituma, Mabaruma, Matthews Ridge, Baramita, Hosororo, Whitewater, Yarakita)
             </span>
             <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
               <span style={{ width: "10px", height: "10px", borderRadius: "50%", background: "#8B6F4E" }} /> Charity, Essequibo

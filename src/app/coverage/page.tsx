@@ -39,8 +39,8 @@ const SERVICE_AREAS = [
     region: "Region 1 — Mabaruma & Surrounds",
     status: "live",
     color: "#E9B44C",
-    towers: ["Mabaruma", "Hosororo", "Whitewater"],
-    villages: ["Mabaruma", "Hosororo", "Whitewater", "Kamwatta Hill", "Kumaka"],
+    towers: ["Mabaruma", "Hosororo", "Whitewater", "Yarakita"],
+    villages: ["Mabaruma", "Hosororo", "Whitewater", "Kamwatta Hill", "Kumaka", "Yarakita"],
     planStart: "GYD 10,000/mo",
   },
   {
