@@ -411,3 +411,70 @@ export async function attachClientDocuments(
   }
   return ok;
 }
+
+/** Find a UISP client by account number (userIdent), tolerant of case. */
+export async function findClientByAccount(
+  account: string,
+): Promise<{ clientId: number; name: string; phone: string | null } | null> {
+  if (!UISP_TOKEN || !account) return null;
+  const headers = { "X-Auth-App-Key": UISP_TOKEN };
+  for (const u of [account.trim(), account.trim().toUpperCase(), account.trim().toLowerCase()]) {
+    try {
+      const res = await fetch(
+        `${UISP_BASE_URL}/crm/api/v1.0/clients?userIdent=${encodeURIComponent(u)}`,
+        { headers },
+      );
+      if (!res.ok) continue;
+      const list = (await res.json()) as Array<{
+        id: number; firstName?: string; lastName?: string; companyName?: string;
+        contacts?: Array<{ phone?: string }>;
+      }>;
+      if (list.length) {
+        const c = list[0];
+        const name = c.companyName || `${c.firstName || ""} ${c.lastName || ""}`.trim();
+        const phone = c.contacts?.find((x) => x.phone)?.phone || null;
+        return { clientId: c.id, name, phone };
+      }
+    } catch { /* try next variant */ }
+  }
+  return null;
+}
+
+/**
+ * Record a cash payment on a UISP client with a note describing what it's for.
+ * The Cash method id is looked up live (falls back to the known system id).
+ */
+export async function createFieldPayment(
+  clientId: number,
+  amountGyd: number,
+  note: string,
+): Promise<{ paymentId: string | null; error: string | null }> {
+  if (!UISP_TOKEN) return { paymentId: null, error: "UISP not configured" };
+  const headers = { "Content-Type": "application/json", "X-Auth-App-Key": UISP_TOKEN };
+  try {
+    let methodId = "6efe0fa8-36b2-4dd1-b049-427bffc7d369"; // Cash (system)
+    try {
+      const mr = await fetch(`${UISP_BASE_URL}/crm/api/v1.0/payment-methods`, { headers });
+      if (mr.ok) {
+        const methods = (await mr.json()) as Array<{ id: string; name: string }>;
+        methodId = methods.find((m) => m.name === "Cash")?.id || methodId;
+      }
+    } catch { /* fallback id */ }
+    const res = await fetch(`${UISP_BASE_URL}/crm/api/v1.0/payments`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        clientId,
+        methodId,
+        amount: Math.round(amountGyd),
+        note: note.slice(0, 500),
+        applyToInvoicesAutomatically: true,
+      }),
+    });
+    if (!res.ok) return { paymentId: null, error: `Payment failed (${res.status}): ${(await res.text()).slice(0, 200)}` };
+    const p = await res.json();
+    return { paymentId: String(p.id), error: null };
+  } catch (err) {
+    return { paymentId: null, error: `Payment error: ${(err as Error).message}` };
+  }
+}

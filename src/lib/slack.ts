@@ -18,6 +18,7 @@ const WEBHOOKS = {
   support: process.env.SLACK_WEBHOOK_SUPPORT || process.env.SLACK_WEBHOOK_GENERAL || "",
   contact: process.env.SLACK_WEBHOOK_CONTACT || process.env.SLACK_WEBHOOK_GENERAL || "",
   general: process.env.SLACK_WEBHOOK_GENERAL || "",
+  billing: process.env.SLACK_WEBHOOK_BILLING || process.env.SLACK_WEBHOOK_GENERAL || "",
 };
 
 interface SlackBlock {
@@ -195,6 +196,32 @@ export async function slackPaymentReceived(data: {
     {
       type: "section",
       text: { type: "mrkdwn", text: `💰 *Payment Received*\n*Customer:* ${data.customerName}\n*Invoice:* ${data.invoiceNumber}\n*Amount:* GYD ${data.amount.toLocaleString()}\n*Method:* ${data.method}` },
+    },
+  ]);
+}
+
+
+/** #billing-payments: field tech collected cash the office must receive. */
+export async function slackFieldPayment(data: {
+  accountNumber: string;
+  customerName: string;
+  itemsSummary: string;
+  totalGyd: number;
+  technicianName: string;
+  uispPaymentId: string | null;
+}): Promise<void> {
+  const total = "GYD " + Math.round(data.totalGyd).toLocaleString("en-US");
+  const text = `💵 Field payment collected — ${total} from ${data.accountNumber} (${data.customerName}) by ${data.technicianName}`;
+  await postToSlack(WEBHOOKS.billing, text, [
+    { type: "header", text: { type: "plain_text", text: `💵 Field Payment — ${total}`, emoji: true } },
+    {
+      type: "section",
+      fields: [
+        { type: "mrkdwn", text: `*Account:*\n${data.accountNumber} — ${data.customerName}` },
+        { type: "mrkdwn", text: `*Paid for:*\n${data.itemsSummary}` },
+        { type: "mrkdwn", text: `*Tech responsible for funds:*\n${data.technicianName} — to remit ${total} to office` },
+        { type: "mrkdwn", text: `*UISP:*\n${data.uispPaymentId ? `recorded ✓ (payment #${data.uispPaymentId})` : "⚠️ NOT recorded — add manually"}` },
+      ],
     },
   ]);
 }
