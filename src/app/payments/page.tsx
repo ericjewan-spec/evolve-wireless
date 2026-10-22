@@ -58,6 +58,7 @@ export default function FieldPaymentPage() {
   // ── Customer lookup ──
   const [account, setAccount] = useState("");
   const [customer, setCustomer] = useState<{ name: string; phone: string | null } | null>(null);
+  const [custPhone, setCustPhone] = useState("");
   const [lookupBusy, setLookupBusy] = useState(false);
   const [lookupError, setLookupError] = useState("");
 
@@ -72,7 +73,7 @@ export default function FieldPaymentPage() {
       });
       const j = await res.json();
       if (!res.ok) setLookupError(res.status === 404 ? "No customer with that account number." : j.detail || "Lookup failed.");
-      else setCustomer(j);
+      else { setCustomer(j); setCustPhone(j.phone || ""); }
     } catch { setLookupError("Network error — try again."); }
     setLookupBusy(false);
   };
@@ -156,6 +157,7 @@ export default function FieldPaymentPage() {
           accountNumber: account.trim(),
           items: validItems.map((i) => ({ label: i.label.trim(), amountGyd: Number(i.amountGyd) })),
           technicianName: techName.trim(),
+          customerPhone: custPhone.trim() || null,
           subscriberSignature: hasSig ? canvasRef.current!.toDataURL("image/png") : null,
         }),
       });
@@ -164,7 +166,7 @@ export default function FieldPaymentPage() {
       setResult(j);
     } catch { setError("Network error — payment NOT recorded. Try again."); }
     setLoading(false);
-  }, [valid, loading, code, account, validItems, techName, hasSig]);
+  }, [valid, loading, code, account, validItems, techName, hasSig, custPhone]);
 
   const receiptText = () => {
     if (!result) return "";
@@ -184,7 +186,7 @@ export default function FieldPaymentPage() {
   };
 
   const reset = () => {
-    setResult(null); setCustomer(null); setAccount(""); setItems([]); setError("");
+    setResult(null); setCustomer(null); setAccount(""); setCustPhone(""); setItems([]); setError("");
     setHasSig(false);
     setTimeout(() => { const c = canvasRef.current; if (c) c.getContext("2d")!.clearRect(0, 0, c.width, c.height); }, 50);
   };
@@ -212,7 +214,7 @@ export default function FieldPaymentPage() {
   }
 
   if (result) {
-    const phone = result.customerPhone || customer?.phone || "";
+    const phone = result.customerPhone || custPhone || customer?.phone || "";
     return (
       <Shell>
         <div style={{ maxWidth: 460, margin: "30px auto", textAlign: "center" }}>
@@ -274,9 +276,18 @@ export default function FieldPaymentPage() {
           </div>
           {lookupError && <div style={{ color: "#B42318", fontSize: 13 }}>{lookupError}</div>}
           {customer && (
-            <div style={{ background: "#F0F7F2", border: "2px solid " + GREEN, borderRadius: 10, padding: "10px 13px", fontSize: 14, color: BROWN }}>
-              ✓ <b>{customer.name}</b>{customer.phone ? ` · ${customer.phone}` : ""}
-            </div>
+            <>
+              <div style={{ background: "#F0F7F2", border: "2px solid " + GREEN, borderRadius: 10, padding: "10px 13px", fontSize: 14, color: BROWN }}>
+                ✓ <b>{customer.name}</b>
+              </div>
+              <div>
+                <div style={{ fontSize: 12, color: "#888", marginBottom: 4 }}>
+                  Customer WhatsApp number {customer.phone ? "(from their account — edit if needed)" : "— none on file, type it (7 digits)"}
+                </div>
+                <input style={inp} inputMode="numeric" placeholder="e.g. 6001234"
+                  value={custPhone} onChange={(e) => setCustPhone(e.target.value.replace(/[^\d+ -]/g, ""))} />
+              </div>
+            </>
           )}
         </Section>
 

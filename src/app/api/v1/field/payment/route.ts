@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json().catch(() => ({}));
-  const { accountNumber, items, technicianName, subscriberSignature } = body;
+  const { accountNumber, items, technicianName, subscriberSignature, customerPhone } = body;
 
   if (!accountNumber || typeof accountNumber !== "string") {
     return NextResponse.json({ error: "missing_account" }, { status: 400 });
@@ -52,6 +52,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "account_not_found", detail: `No UISP client with account ${accountNumber}.` }, { status: 404 });
   }
 
+  // Tech-supplied number wins when the UISP account has none (or a wrong one).
+  const typedPhone = typeof customerPhone === "string" && customerPhone.replace(/\D/g, "").length >= 7
+    ? customerPhone.trim()
+    : null;
+  const effectivePhone = typedPhone || client.phone;
+
   // 2) Record the payment on their UISP account with a note of what it's for.
   const itemsSummary = clean.map((i) => `${i.label} — GYD ${i.amountGyd.toLocaleString("en-US")}`).join(", ");
   const note = `Field collection: ${itemsSummary}. Collected in cash by ${tech} (to remit to office).`;
@@ -65,7 +71,7 @@ export async function POST(req: NextRequest) {
       uisp_client_id: String(client.clientId),
       uisp_payment_id: paymentId,
       customer_name: client.name,
-      customer_phone: client.phone,
+      customer_phone: effectivePhone,
       items: clean,
       total_gyd: total,
       technician_name: tech,
@@ -96,7 +102,7 @@ export async function POST(req: NextRequest) {
     ok: true,
     id: row.id,
     customerName: client.name,
-    customerPhone: client.phone,
+    customerPhone: effectivePhone,
     totalGyd: total,
     items: clean,
     uispRecorded: Boolean(paymentId),
