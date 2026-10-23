@@ -225,3 +225,59 @@ export async function slackFieldPayment(data: {
     },
   ]);
 }
+
+
+/** #billing-payments: tech checked out cash + equipment at start of day. */
+export async function slackDayStart(data: {
+  technicianName: string;
+  cashAdvanceGyd: number;
+  cashPurpose: string | null;
+  equipment: { item: string; qty: number }[];
+}): Promise<void> {
+  const cash = "GYD " + Math.round(data.cashAdvanceGyd).toLocaleString("en-US");
+  const equip = data.equipment.length
+    ? data.equipment.map((e) => `${e.qty}× ${e.item}`).join(", ")
+    : "none";
+  await postToSlack(WEBHOOKS.billing, `🌅 Day started: ${data.technicianName} — advance ${cash}, equipment: ${equip}`, [
+    { type: "header", text: { type: "plain_text", text: `🌅 Day Sheet — ${data.technicianName}`, emoji: true } },
+    {
+      type: "section",
+      fields: [
+        { type: "mrkdwn", text: `*Cash advance:*\n${cash}${data.cashPurpose ? ` — ${data.cashPurpose}` : ""}` },
+        { type: "mrkdwn", text: `*Equipment taken:*\n${equip}` },
+      ],
+    },
+  ]);
+}
+
+/** #billing-payments: end-of-day reconciliation for a tech's day sheet. */
+export async function slackDayClose(data: {
+  technicianName: string;
+  cashAdvanceGyd: number;
+  purchasesGyd: number;
+  cashReturnedGyd: number;
+  equipmentSummary: string;
+  collectionsTotalGyd: number;
+  collectionsCount: number;
+  notes: string | null;
+}): Promise<void> {
+  const g = (n: number) => "GYD " + Math.round(n).toLocaleString("en-US");
+  const diff = Math.round(data.cashAdvanceGyd - data.purchasesGyd - data.cashReturnedGyd);
+  const cashLine = `Advance ${g(data.cashAdvanceGyd)} − receipts ${g(data.purchasesGyd)} − returned ${g(data.cashReturnedGyd)} = ${diff === 0 ? "✓ balanced" : `⚠️ ${g(Math.abs(diff))} ${diff > 0 ? "unaccounted" : "over-returned"}`}`;
+  await postToSlack(
+    WEBHOOKS.billing,
+    `🌇 Day closed: ${data.technicianName} — ${cashLine}; collections to remit ${g(data.collectionsTotalGyd)}`,
+    [
+      { type: "header", text: { type: "plain_text", text: `🌇 Day Closed — ${data.technicianName}`, emoji: true } },
+      {
+        type: "section",
+        fields: [
+          { type: "mrkdwn", text: `*Purchase cash:*\n${cashLine}` },
+          { type: "mrkdwn", text: `*Equipment:*\n${data.equipmentSummary || "none taken"}` },
+          { type: "mrkdwn", text: `*Customer collections to remit:*\n${g(data.collectionsTotalGyd)} (${data.collectionsCount} payment${data.collectionsCount === 1 ? "" : "s"})` },
+          { type: "mrkdwn", text: `*Notes:*\n${data.notes || "—"}` },
+        ],
+      },
+    ],
+  );
+}
