@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase-service";
+import { verifyTech } from "@/lib/field-auth";
 
 export const dynamic = "force-dynamic";
 
@@ -16,16 +17,10 @@ export const dynamic = "force-dynamic";
 export async function POST(req: NextRequest) {
   const svc = createServiceClient();
 
-  // Gate on the shared install code
-  const provided = req.headers.get("x-install-code")?.trim() || "";
-  const { data: codeRow } = await svc
-    .from("app_settings")
-    .select("value")
-    .eq("key", "field_install_code")
-    .maybeSingle();
-  if (!codeRow?.value || provided !== codeRow.value) {
-    return NextResponse.json({ error: "invalid_code" }, { status: 403 });
-  }
+  // Gate on the tech's personal PIN
+  const { tech: authedTech, limited } = await verifyTech(req);
+  if (limited) return NextResponse.json({ error: "too_many_attempts" }, { status: 429 });
+  if (!authedTech) return NextResponse.json({ error: "invalid_code" }, { status: 403 });
 
   const form = await req.formData().catch(() => null);
   const file = form?.get("file");

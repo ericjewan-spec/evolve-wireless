@@ -30,17 +30,24 @@ export default function DaySheetPage() {
   const [code, setCode] = useState("");
   const [gateError, setGateError] = useState("");
   const [gateBusy, setGateBusy] = useState(false);
-  const [techs, setTechs] = useState<string[]>([]);
+  const [authedTech, setAuthedTech] = useState("");
+
+  const deviceId = () => {
+    let d = localStorage.getItem("evolve_device");
+    if (!d) { d = crypto.randomUUID(); localStorage.setItem("evolve_device", d); }
+    return d;
+  };
+
 
   useEffect(() => {
     const saved = typeof window !== "undefined" ? localStorage.getItem("evolve_install_code") : null;
     if (!saved) { setCheckingGate(false); return; }
     fetch("/api/v1/field/verify-code", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ code: saved }),
+      body: JSON.stringify({ code: saved, deviceId: deviceId() }),
     })
       .then((r) => r.json())
-      .then((j) => { if (j.ok) { setCode(saved); setUnlocked(true); setTechs(j.technicians || []); } else { localStorage.removeItem("evolve_install_code"); } })
+      .then((j) => { if (j.ok) { setCode(saved); setUnlocked(true); setAuthedTech(j.techName || ""); } else { localStorage.removeItem("evolve_install_code"); } })
       .catch(() => {})
       .finally(() => setCheckingGate(false));
   }, []);
@@ -50,11 +57,11 @@ export default function DaySheetPage() {
     try {
       const res = await fetch("/api/v1/field/verify-code", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code: code.trim() }),
+        body: JSON.stringify({ code: code.trim(), deviceId: deviceId() }),
       });
       const j = await res.json();
-      if (j.ok) { localStorage.setItem("evolve_install_code", code.trim()); setUnlocked(true); setTechs(j.technicians || []); }
-      else setGateError("Wrong code — check with the office.");
+      if (j.ok) { localStorage.setItem("evolve_install_code", code.trim()); setUnlocked(true); setAuthedTech(j.techName || ""); }
+      else setGateError(res.status === 429 ? "Too many wrong attempts — wait 10 minutes." : "Wrong code — check with the office.");
     } catch { setGateError("Network error — try again."); }
     setGateBusy(false);
   };
@@ -63,7 +70,6 @@ export default function DaySheetPage() {
   const [mode, setMode] = useState<"start" | "close">("start");
 
   // ── Start form ──
-  const [tech, setTech] = useState("");
   const [cash, setCash] = useState("");
   const [purpose, setPurpose] = useState("");
   const [equip, setEquip] = useState<EquipRow[]>([]);
@@ -76,7 +82,7 @@ export default function DaySheetPage() {
   const [startDone, setStartDone] = useState<{ cash: number; equip: { item: string; qty: number }[] } | null>(null);
 
   const validEquip = equip.filter((e) => e.item.trim() && Number(e.qty) > 0);
-  const startValid = tech.trim() && (Number(cash) > 0 || validEquip.length > 0);
+  const startValid = authedTech && (Number(cash) > 0 || validEquip.length > 0);
 
   const submitStart = useCallback(async () => {
     if (!startValid || startBusy) return;
@@ -85,7 +91,7 @@ export default function DaySheetPage() {
       const res = await fetch("/api/v1/field/day/start", {
         method: "POST", headers: { "Content-Type": "application/json", "x-install-code": code },
         body: JSON.stringify({
-          technicianName: tech.trim(),
+          technicianName: authedTech,
           cashAdvanceGyd: Number(cash) || 0,
           cashPurpose: purpose.trim(),
           equipment: validEquip.map((e) => ({ item: e.item.trim(), qty: Number(e.qty) })),
@@ -96,9 +102,9 @@ export default function DaySheetPage() {
       setStartDone({ cash: Number(cash) || 0, equip: validEquip.map((e) => ({ item: e.item.trim(), qty: Number(e.qty) })) });
     } catch { setStartErr("Network error — try again."); }
     setStartBusy(false);
-  }, [startValid, startBusy, code, tech, cash, purpose, validEquip]);
+  }, [startValid, startBusy, code, authedTech, cash, purpose, validEquip]);
 
-  const resetStart = () => { setStartDone(null); setTech(""); setCash(""); setPurpose(""); setEquip([]); };
+  const resetStart = () => { setStartDone(null); setCash(""); setPurpose(""); setEquip([]); };
 
   // ── Close flow ──
   const [sheets, setSheets] = useState<Sheet[]>([]);
@@ -170,7 +176,7 @@ export default function DaySheetPage() {
         <div style={{ maxWidth: 360, margin: "60px auto", textAlign: "center" }}>
           <div style={{ fontSize: 40 }}>🌅</div>
           <h1 style={{ color: GREEN, fontSize: 22, margin: "10px 0 4px" }}>Tech Day Sheet</h1>
-          <p style={{ color: "#888", fontSize: 14, marginBottom: 18 }}>Enter the field code to continue.</p>
+          <p style={{ color: "#888", fontSize: 14, marginBottom: 18 }}>Enter your tech code to continue.</p>
           <input style={{ ...inp, textAlign: "center", fontSize: 22, letterSpacing: 6 }} inputMode="numeric"
             value={code} onChange={(e) => setCode(e.target.value)} onKeyDown={(e) => e.key === "Enter" && tryUnlock()} />
           {gateError && <div style={{ color: "#B42318", fontSize: 13, marginTop: 8 }}>{gateError}</div>}
@@ -195,14 +201,7 @@ export default function DaySheetPage() {
         {mode === "start" && !startDone && (
           <>
             <Section title="Technician">
-              {techs.length ? (
-                <select style={inp} value={tech} onChange={(e) => setTech(e.target.value)}>
-                  <option value="">Select technician…</option>
-                  {techs.map((t) => <option key={t} value={t}>{t}</option>)}
-                </select>
-              ) : (
-                <input style={inp} placeholder="Your name" value={tech} onChange={(e) => setTech(e.target.value)} />
-              )}
+              <div style={{ ...inp, background: "#F0F7F2", border: "2px solid #1F6F3D", color: "#1F6F3D", fontWeight: 700 }}>🔒 {authedTech}</div>
             </Section>
             <Section title="Cash for purchases">
               <input style={inp} placeholder="Amount (GYD)" inputMode="numeric" value={cash}

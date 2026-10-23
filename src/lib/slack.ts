@@ -281,3 +281,12 @@ export async function slackDayClose(data: {
     ],
   );
 }
+
+
+/** Security: a tech's PIN unlocked the field tools on a device not seen before. */
+export async function slackNewDeviceUnlock(tech: string, ip: string): Promise<void> {
+  await postToSlack(
+    WEBHOOKS.billing,
+    `🔓 ${tech} unlocked the field tools on a NEW device (ip ${ip}). If this wasn't them, deactivate their PIN in field_techs.`,
+  );
+}

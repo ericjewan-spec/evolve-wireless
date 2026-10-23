@@ -37,7 +37,14 @@ export default function InstallPage() {
   const [code, setCode] = useState("");
   const [codeError, setCodeError] = useState("");
   const [verifying, setVerifying] = useState(false);
-  const [techs, setTechs] = useState<string[]>([]);
+  const [authedTech, setAuthedTech] = useState("");
+
+  const deviceId = () => {
+    let d = localStorage.getItem("evolve_device");
+    if (!d) { d = crypto.randomUUID(); localStorage.setItem("evolve_device", d); }
+    return d;
+  };
+
 
   useEffect(() => {
     const saved = typeof window !== "undefined" ? localStorage.getItem("evolve_install_code") : null;
@@ -45,10 +52,10 @@ export default function InstallPage() {
     fetch("/api/v1/field/verify-code", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ code: saved }),
+      body: JSON.stringify({ code: saved, deviceId: deviceId() }),
     })
       .then((r) => r.json())
-      .then((j) => { if (j.ok) { setCode(saved); setUnlocked(true); setTechs(j.technicians || []); } else { localStorage.removeItem("evolve_install_code"); } })
+      .then((j) => { if (j.ok) { setCode(saved); setUnlocked(true); setAuthedTech(j.techName || ""); } else { localStorage.removeItem("evolve_install_code"); } })
       .catch(() => {})
       .finally(() => setCheckingGate(false));
   }, []);
@@ -60,15 +67,15 @@ export default function InstallPage() {
       const res = await fetch("/api/v1/field/verify-code", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code: code.trim() }),
+        body: JSON.stringify({ code: code.trim(), deviceId: deviceId() }),
       });
       const j = await res.json();
       if (j.ok) {
         localStorage.setItem("evolve_install_code", code.trim());
         setUnlocked(true);
-        setTechs(j.technicians || []);
+        setAuthedTech(j.techName || "");
       } else {
-        setCodeError("Incorrect code. Check with the office.");
+        setCodeError(res.status === 429 ? "Too many wrong attempts — wait 10 minutes." : "Incorrect code. Check with the office.");
       }
     } catch {
       setCodeError("Network error — try again.");
@@ -77,7 +84,7 @@ export default function InstallPage() {
     }
   }, [code]);
 
-  const lock = () => { localStorage.removeItem("evolve_install_code"); setUnlocked(false); setCode(""); };
+  const lock = () => { localStorage.removeItem("evolve_install_code"); setUnlocked(false); setCode(""); setAuthedTech(""); };
 
   const [region, setRegion] = useState("ecd");
   const [planId, setPlanId] = useState("");
@@ -244,7 +251,7 @@ export default function InstallPage() {
           wifiName: form.wifiName,
           wifiPassword: form.wifiPassword,
           landlordName: form.landlordName,
-          technicianName: form.technicianName,
+          technicianName: authedTech,
           installDate: form.installDate,
           subscriberSignature: signature,
           gpsLat: gps?.lat ?? null,
@@ -279,7 +286,7 @@ export default function InstallPage() {
         <div style={{ textAlign: "center", marginBottom: 24 }}>
           <div style={{ fontSize: 40 }}>🛠</div>
           <h1 style={{ color: GREEN, fontSize: 22, margin: "8px 0 4px" }}>Evolve Install Sign-Up</h1>
-          <p style={{ color: BROWN, fontSize: 14 }}>Enter the install code to continue.</p>
+          <p style={{ color: BROWN, fontSize: 14 }}>Enter your tech code to continue.</p>
         </div>
         <input
           style={{ ...inp, textAlign: "center", fontSize: 18, letterSpacing: 1 }}
@@ -416,14 +423,7 @@ export default function InstallPage() {
 
       <Section title="Install Details">
         <Field label="Technician">
-          {techs.length ? (
-            <select style={inp} value={form.technicianName} onChange={(e) => set("technicianName", e.target.value)}>
-              <option value="">Select technician…</option>
-              {techs.map((t) => <option key={t} value={t}>{t}</option>)}
-            </select>
-          ) : (
-            <input style={inp} value={form.technicianName} onChange={(e) => set("technicianName", e.target.value)} />
-          )}
+          <div style={{ ...inp, background: "#F0F7F2", border: "2px solid #1F6F3D", color: "#1F6F3D", fontWeight: 700 }}>🔒 {authedTech}</div>
         </Field>
         <Field label="Install Date"><input style={inp} type="date" value={form.installDate} onChange={(e) => set("installDate", e.target.value)} /></Field>
         <Field label="Landlord Name (if applicable)"><input style={inp} value={form.landlordName} onChange={(e) => set("landlordName", e.target.value)} /></Field>

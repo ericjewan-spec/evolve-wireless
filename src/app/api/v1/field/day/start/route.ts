@@ -6,11 +6,11 @@ export const dynamic = "force-dynamic";
 
 /** POST — open a day sheet: cash advance + equipment checked out. */
 export async function POST(req: NextRequest) {
-  const { svc, fail } = await gate(req);
-  if (fail) return fail;
+  const { svc, tech: authed, fail } = await gate(req);
+  if (fail || !authed) return fail!;
 
   const body = await req.json().catch(() => ({}));
-  const tech = String(body.technicianName || "").trim();
+  const tech = authed.name || String(body.technicianName || "").trim();
   if (!tech) return NextResponse.json({ error: "missing_tech", detail: "Technician name is required." }, { status: 400 });
 
   const cash = Math.max(0, Math.round(Number(body.cashAdvanceGyd) || 0));

@@ -26,17 +26,24 @@ export default function FieldPaymentPage() {
   const [code, setCode] = useState("");
   const [gateError, setGateError] = useState("");
   const [gateBusy, setGateBusy] = useState(false);
-  const [techs, setTechs] = useState<string[]>([]);
+  const [authedTech, setAuthedTech] = useState("");
+
+  const deviceId = () => {
+    let d = localStorage.getItem("evolve_device");
+    if (!d) { d = crypto.randomUUID(); localStorage.setItem("evolve_device", d); }
+    return d;
+  };
+
 
   useEffect(() => {
     const saved = typeof window !== "undefined" ? localStorage.getItem("evolve_install_code") : null;
     if (!saved) { setCheckingGate(false); return; }
     fetch("/api/v1/field/verify-code", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ code: saved }),
+      body: JSON.stringify({ code: saved, deviceId: deviceId() }),
     })
       .then((r) => r.json())
-      .then((j) => { if (j.ok) { setCode(saved); setUnlocked(true); setTechs(j.technicians || []); } else { localStorage.removeItem("evolve_install_code"); } })
+      .then((j) => { if (j.ok) { setCode(saved); setUnlocked(true); setAuthedTech(j.techName || ""); } else { localStorage.removeItem("evolve_install_code"); } })
       .catch(() => {})
       .finally(() => setCheckingGate(false));
   }, []);
@@ -46,15 +53,15 @@ export default function FieldPaymentPage() {
     try {
       const res = await fetch("/api/v1/field/verify-code", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code: code.trim() }),
+        body: JSON.stringify({ code: code.trim(), deviceId: deviceId() }),
       });
       const j = await res.json();
-      if (j.ok) { localStorage.setItem("evolve_install_code", code.trim()); setUnlocked(true); setTechs(j.technicians || []); }
-      else setGateError("Wrong code — check with the office.");
+      if (j.ok) { localStorage.setItem("evolve_install_code", code.trim()); setUnlocked(true); setAuthedTech(j.techName || ""); }
+      else setGateError(res.status === 429 ? "Too many wrong attempts — wait 10 minutes." : "Wrong code — check with the office.");
     } catch { setGateError("Network error — try again."); }
     setGateBusy(false);
   };
-  const lock = () => { localStorage.removeItem("evolve_install_code"); setUnlocked(false); setCode(""); };
+  const lock = () => { localStorage.removeItem("evolve_install_code"); setUnlocked(false); setCode(""); setAuthedTech(""); };
 
   // ── Customer lookup ──
   const [account, setAccount] = useState("");
@@ -86,7 +93,6 @@ export default function FieldPaymentPage() {
   const removeItem = (idx: number) => setItems((p) => p.filter((_, i) => i !== idx));
   const total = items.reduce((s, i) => s + (Number(i.amountGyd) || 0), 0);
 
-  const [techName, setTechName] = useState("");
 
   // ── Signature pad ──
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -145,7 +151,7 @@ export default function FieldPaymentPage() {
   } | null>(null);
 
   const validItems = items.filter((i) => i.label.trim() && Number(i.amountGyd) > 0);
-  const valid = Boolean(customer) && validItems.length > 0 && techName.trim() && hasSig;
+  const valid = Boolean(customer) && validItems.length > 0 && authedTech && hasSig;
 
   const submit = useCallback(async () => {
     if (!valid || loading) return;
@@ -157,7 +163,7 @@ export default function FieldPaymentPage() {
         body: JSON.stringify({
           accountNumber: account.trim(),
           items: validItems.map((i) => ({ label: i.label.trim(), amountGyd: Number(i.amountGyd) })),
-          technicianName: techName.trim(),
+          technicianName: authedTech,
           customerPhone: custPhone.trim() || null,
           subscriberSignature: hasSig ? canvasRef.current!.toDataURL("image/png") : null,
         }),
@@ -167,7 +173,7 @@ export default function FieldPaymentPage() {
       setResult(j);
     } catch { setError("Network error — payment NOT recorded. Try again."); }
     setLoading(false);
-  }, [valid, loading, code, account, validItems, techName, hasSig, custPhone]);
+  }, [valid, loading, code, account, validItems, authedTech, hasSig, custPhone]);
 
   const receiptText = () => {
     if (!result) return "";
@@ -179,7 +185,7 @@ export default function FieldPaymentPage() {
       `Date: ${today()}\n\n` +
       `${lines}\n\n` +
       `*Total Paid: ${gyd(result.totalGyd)}* (cash)\n` +
-      `Collected by: ${techName.trim()} (Evolve technician)\n\n` +
+      `Collected by: ${authedTech} (Evolve technician)\n\n` +
       `This payment has been recorded on your account.\n` +
       `Need help anytime? Chat with our support agent on WhatsApp: wa.me/5927346480\n` +
       `Technical Support: 609-2487`
@@ -201,7 +207,7 @@ export default function FieldPaymentPage() {
         <div style={{ maxWidth: 360, margin: "60px auto", textAlign: "center" }}>
           <div style={{ fontSize: 40 }}>💵</div>
           <h1 style={{ color: GREEN, fontSize: 22, margin: "10px 0 4px" }}>Field Payments</h1>
-          <p style={{ color: "#888", fontSize: 14, marginBottom: 18 }}>Enter the field code to continue.</p>
+          <p style={{ color: "#888", fontSize: 14, marginBottom: 18 }}>Enter your tech code to continue.</p>
           <input style={{ ...inp, textAlign: "center", fontSize: 22, letterSpacing: 6 }} inputMode="numeric"
             value={code} onChange={(e) => setCode(e.target.value)} onKeyDown={(e) => e.key === "Enter" && tryUnlock()} />
           {gateError && <div style={{ color: "#B42318", fontSize: 13, marginTop: 8 }}>{gateError}</div>}
@@ -237,7 +243,7 @@ export default function FieldPaymentPage() {
           </div>
 
           <div style={{ background: "#FFF8E8", border: "1px solid #E9B44C", borderRadius: 12, padding: "10px 14px", fontSize: 14, color: BROWN, marginBottom: 16 }}>
-            💰 <b>{techName.trim()}</b>: bring <b>{gyd(result.totalGyd)}</b> to the office. Billing has been notified.
+            💰 <b>{authedTech}</b>: bring <b>{gyd(result.totalGyd)}</b> to the office. Billing has been notified.
           </div>
 
           {phone && (
@@ -315,14 +321,7 @@ export default function FieldPaymentPage() {
         </Section>
 
         <Section title="Technician (responsible for funds)">
-          {techs.length ? (
-            <select style={inp} value={techName} onChange={(e) => setTechName(e.target.value)}>
-              <option value="">Select technician…</option>
-              {techs.map((t) => <option key={t} value={t}>{t}</option>)}
-            </select>
-          ) : (
-            <input style={inp} placeholder="Your name" value={techName} onChange={(e) => setTechName(e.target.value)} />
-          )}
+          <div style={{ ...inp, background: "#F0F7F2", border: "2px solid #1F6F3D", color: "#1F6F3D", fontWeight: 700 }}>🔒 {authedTech}</div>
         </Section>
 
         <Section title="Customer Signature">

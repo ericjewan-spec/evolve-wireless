@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase-service";
+import { verifyTech } from "@/lib/field-auth";
 import { findClientByAccount } from "@/lib/uisp-sync";
 
 export const dynamic = "force-dynamic";
@@ -7,11 +8,9 @@ export const dynamic = "force-dynamic";
 /** POST { accountNumber } → { name, phone } — gated by the field install code. */
 export async function POST(req: NextRequest) {
   const svc = createServiceClient();
-  const provided = req.headers.get("x-install-code")?.trim() || "";
-  const { data: codeRow } = await svc.from("app_settings").select("value").eq("key", "field_install_code").maybeSingle();
-  if (!codeRow?.value || provided !== codeRow.value) {
-    return NextResponse.json({ error: "invalid_code" }, { status: 403 });
-  }
+  const { tech: authedTech, limited } = await verifyTech(req);
+  if (limited) return NextResponse.json({ error: "too_many_attempts" }, { status: 429 });
+  if (!authedTech) return NextResponse.json({ error: "invalid_code" }, { status: 403 });
   const { accountNumber } = await req.json().catch(() => ({}));
   if (!accountNumber || typeof accountNumber !== "string") {
     return NextResponse.json({ error: "missing_account" }, { status: 400 });

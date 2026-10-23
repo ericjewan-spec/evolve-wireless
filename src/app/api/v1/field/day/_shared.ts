@@ -1,15 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase-service";
+import { verifyTech } from "@/lib/field-auth";
 
-/** Shared field-code gate for the day-sheet endpoints. */
+/** Shared PIN gate for the day-sheet endpoints. */
 export async function gate(req: NextRequest) {
   const svc = createServiceClient();
-  const provided = req.headers.get("x-install-code")?.trim() || "";
-  const { data: codeRow } = await svc.from("app_settings").select("value").eq("key", "field_install_code").maybeSingle();
-  if (!codeRow?.value || provided !== codeRow.value) {
-    return { svc, fail: NextResponse.json({ error: "invalid_code" }, { status: 403 }) };
-  }
-  return { svc, fail: null };
+  const { tech, limited } = await verifyTech(req);
+  if (limited) return { svc, tech: null, fail: NextResponse.json({ error: "too_many_attempts" }, { status: 429 }) };
+  if (!tech) return { svc, tech: null, fail: NextResponse.json({ error: "invalid_code" }, { status: 403 }) };
+  return { svc, tech, fail: null };
 }
 
 /** Guyana (UTC-4) calendar date. */

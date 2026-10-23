@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase-service";
+import { verifyTech } from "@/lib/field-auth";
 import { provisionInstalledClient, attachClientDocuments } from "@/lib/uisp-sync";
 import { appendInstallToSheet } from "@/lib/sheets";
 import { generateContractPdf } from "@/lib/contract-pdf";
@@ -22,16 +23,9 @@ export async function POST(req: NextRequest) {
   const svc = createServiceClient();
 
   // 1) Gate on the shared install code (defense-in-depth; the form checks too).
-  const provided = req.headers.get("x-install-code")?.trim() || "";
-  const { data: codeRow } = await svc
-    .from("app_settings")
-    .select("value")
-    .eq("key", "field_install_code")
-    .maybeSingle();
-  const expected = codeRow?.value || null;
-  if (!expected || provided !== expected) {
-    return NextResponse.json({ error: "invalid_code" }, { status: 403 });
-  }
+  const { tech: authedTech, limited } = await verifyTech(req);
+  if (limited) return NextResponse.json({ error: "too_many_attempts" }, { status: 429 });
+  if (!authedTech) return NextResponse.json({ error: "invalid_code" }, { status: 403 });
 
   // Region 1 account-number floor (skips reserved numbers like MA1180).
   const { data: floorRow } = await svc
@@ -111,7 +105,7 @@ export async function POST(req: NextRequest) {
       wifi_password: wifiPassword || null,
       landlord_name: landlordName || null,
       subscriber_signature: subscriberSignature || null,
-      technician_name: technicianName || null,
+      technician_name: authedTech.name || technicianName || null,
       install_date: installDate || undefined,
       gps_lat: typeof gpsLat === "number" ? gpsLat : null,
       gps_lon: typeof gpsLon === "number" ? gpsLon : null,

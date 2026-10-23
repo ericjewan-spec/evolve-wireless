@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase-service";
+import { verifyTech } from "@/lib/field-auth";
 import { findClientByAccount, createFieldPayment } from "@/lib/uisp-sync";
 import { slackFieldPayment } from "@/lib/slack";
 
@@ -17,11 +18,9 @@ export const dynamic = "force-dynamic";
  */
 export async function POST(req: NextRequest) {
   const svc = createServiceClient();
-  const provided = req.headers.get("x-install-code")?.trim() || "";
-  const { data: codeRow } = await svc.from("app_settings").select("value").eq("key", "field_install_code").maybeSingle();
-  if (!codeRow?.value || provided !== codeRow.value) {
-    return NextResponse.json({ error: "invalid_code" }, { status: 403 });
-  }
+  const { tech: authedTech, limited } = await verifyTech(req);
+  if (limited) return NextResponse.json({ error: "too_many_attempts" }, { status: 429 });
+  if (!authedTech) return NextResponse.json({ error: "invalid_code" }, { status: 403 });
 
   const body = await req.json().catch(() => ({}));
   const { accountNumber, items, technicianName, subscriberSignature, customerPhone } = body;
@@ -43,7 +42,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "no_items", detail: "Each item needs a name and an amount." }, { status: 400 });
   }
   const total = clean.reduce((s, i) => s + i.amountGyd, 0);
-  const tech = String(technicianName || "").trim();
+  const tech = authedTech.name || String(technicianName || "").trim();
   if (!tech) return NextResponse.json({ error: "missing_tech", detail: "Technician name is required." }, { status: 400 });
 
   // 1) Find the customer in UISP.
