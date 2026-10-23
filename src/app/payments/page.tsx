@@ -26,6 +26,7 @@ export default function FieldPaymentPage() {
   const [code, setCode] = useState("");
   const [gateError, setGateError] = useState("");
   const [gateBusy, setGateBusy] = useState(false);
+  const [techs, setTechs] = useState<string[]>([]);
 
   useEffect(() => {
     const saved = typeof window !== "undefined" ? localStorage.getItem("evolve_install_code") : null;
@@ -35,7 +36,7 @@ export default function FieldPaymentPage() {
       body: JSON.stringify({ code: saved }),
     })
       .then((r) => r.json())
-      .then((j) => { if (j.ok) { setCode(saved); setUnlocked(true); } else { localStorage.removeItem("evolve_install_code"); } })
+      .then((j) => { if (j.ok) { setCode(saved); setUnlocked(true); setTechs(j.technicians || []); } else { localStorage.removeItem("evolve_install_code"); } })
       .catch(() => {})
       .finally(() => setCheckingGate(false));
   }, []);
@@ -48,7 +49,7 @@ export default function FieldPaymentPage() {
         body: JSON.stringify({ code: code.trim() }),
       });
       const j = await res.json();
-      if (j.ok) { localStorage.setItem("evolve_install_code", code.trim()); setUnlocked(true); }
+      if (j.ok) { localStorage.setItem("evolve_install_code", code.trim()); setUnlocked(true); setTechs(j.technicians || []); }
       else setGateError("Wrong code — check with the office.");
     } catch { setGateError("Network error — try again."); }
     setGateBusy(false);
@@ -314,7 +315,14 @@ export default function FieldPaymentPage() {
         </Section>
 
         <Section title="Technician (responsible for funds)">
-          <input style={inp} placeholder="Your name" value={techName} onChange={(e) => setTechName(e.target.value)} />
+          {techs.length ? (
+            <select style={inp} value={techName} onChange={(e) => setTechName(e.target.value)}>
+              <option value="">Select technician…</option>
+              {techs.map((t) => <option key={t} value={t}>{t}</option>)}
+            </select>
+          ) : (
+            <input style={inp} placeholder="Your name" value={techName} onChange={(e) => setTechName(e.target.value)} />
+          )}
         </Section>
 
         <Section title="Customer Signature">

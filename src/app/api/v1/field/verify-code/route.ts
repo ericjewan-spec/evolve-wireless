@@ -22,5 +22,17 @@ export async function POST(req: NextRequest) {
 
   const expected = data?.value || null;
   const ok = Boolean(expected) && String(code).trim() === expected;
-  return NextResponse.json({ ok });
+  if (!ok) return NextResponse.json({ ok });
+
+  // Field technician dropdown list (app_settings.field_technicians, comma-separated).
+  const { data: techRow } = await svc
+    .from("app_settings")
+    .select("value")
+    .eq("key", "field_technicians")
+    .maybeSingle();
+  const technicians = (techRow?.value || "")
+    .split(",")
+    .map((t: string) => t.trim())
+    .filter(Boolean);
+  return NextResponse.json({ ok, technicians });
 }

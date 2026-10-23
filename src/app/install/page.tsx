@@ -37,6 +37,7 @@ export default function InstallPage() {
   const [code, setCode] = useState("");
   const [codeError, setCodeError] = useState("");
   const [verifying, setVerifying] = useState(false);
+  const [techs, setTechs] = useState<string[]>([]);
 
   useEffect(() => {
     const saved = typeof window !== "undefined" ? localStorage.getItem("evolve_install_code") : null;
@@ -47,7 +48,7 @@ export default function InstallPage() {
       body: JSON.stringify({ code: saved }),
     })
       .then((r) => r.json())
-      .then((j) => { if (j.ok) { setCode(saved); setUnlocked(true); } else { localStorage.removeItem("evolve_install_code"); } })
+      .then((j) => { if (j.ok) { setCode(saved); setUnlocked(true); setTechs(j.technicians || []); } else { localStorage.removeItem("evolve_install_code"); } })
       .catch(() => {})
       .finally(() => setCheckingGate(false));
   }, []);
@@ -65,6 +66,7 @@ export default function InstallPage() {
       if (j.ok) {
         localStorage.setItem("evolve_install_code", code.trim());
         setUnlocked(true);
+        setTechs(j.technicians || []);
       } else {
         setCodeError("Incorrect code. Check with the office.");
       }
@@ -413,7 +415,16 @@ export default function InstallPage() {
       </Section>
 
       <Section title="Install Details">
-        <Field label="Technician Name"><input style={inp} value={form.technicianName} onChange={(e) => set("technicianName", e.target.value)} /></Field>
+        <Field label="Technician">
+          {techs.length ? (
+            <select style={inp} value={form.technicianName} onChange={(e) => set("technicianName", e.target.value)}>
+              <option value="">Select technician…</option>
+              {techs.map((t) => <option key={t} value={t}>{t}</option>)}
+            </select>
+          ) : (
+            <input style={inp} value={form.technicianName} onChange={(e) => set("technicianName", e.target.value)} />
+          )}
+        </Field>
         <Field label="Install Date"><input style={inp} type="date" value={form.installDate} onChange={(e) => set("installDate", e.target.value)} /></Field>
         <Field label="Landlord Name (if applicable)"><input style={inp} value={form.landlordName} onChange={(e) => set("landlordName", e.target.value)} /></Field>
       </Section>
